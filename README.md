@@ -15,7 +15,7 @@ bench install-app mobile_control
 ### Mobile Auth API
 
 These endpoints are exposed as whitelisted methods and are intended for a mobile
-client. All endpoints expect `POST` requests.
+client. All endpoints expect `POST` requests and use the `api/method/` route.
 
 Endpoints:
 
@@ -36,6 +36,67 @@ Client flow:
 2. Use `access_token` as `Authorization: Bearer <access_token>` for API calls.
 3. When access token expires, call `mobile_auth.refresh_token` with the
    `refresh_token` to get a new pair.
+
+#### Request Examples
+
+All requests use:
+
+```
+POST {{base_url}}/api/method/<endpoint>
+```
+
+Login:
+
+```json
+{
+  "username": "your.username",
+  "password": "your.password"
+}
+```
+
+Send OTP:
+
+```json
+{
+  "mobile_no": "+15551234567"
+}
+```
+
+Verify OTP:
+
+```json
+{
+  "tmp_id": "TMP_ID_FROM_SEND_OTP",
+  "otp": "123456"
+}
+```
+
+Refresh token:
+
+```json
+{
+  "refresh_token": "REFRESH_TOKEN"
+}
+```
+
+Logout:
+
+```
+Authorization: Bearer <access_token>
+```
+
+#### Bruno Collection
+
+The `API/` directory contains a Bruno collection to try the endpoints:
+
+- `API/bruno.json` - Collection config
+- `API/Login with username and password.bru`
+- `API/Get Access Token.bru`
+- `API/Logout.bru`
+
+Update the `base_url`, `username`, and `password` variables inside the Bruno
+requests before running them.
+
 
 ### Contributing
 

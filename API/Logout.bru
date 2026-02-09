@@ -1,0 +1,24 @@
+meta {
+  name: Logout
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{base_url}}method/mobile_auth.logout
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+vars:pre-request {
+  base_url: your base url
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

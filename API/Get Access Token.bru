@@ -1,0 +1,26 @@
+meta {
+  name: Get Access Token
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{base_url}}method/mobile_auth.refresh_token
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "refresh_token" : "refresh_token"
+  }
+}
+
+vars:pre-request {
+  base_url: your base url
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

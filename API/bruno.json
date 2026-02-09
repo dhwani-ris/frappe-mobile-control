@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "Mobile Control API",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

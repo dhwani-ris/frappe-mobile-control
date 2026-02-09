@@ -15,8 +15,8 @@ from frappe.utils import validate_phone_number
 from .jwt_auth import encode_api_credentials
 
 MOBILE_USER_ROLES = ["Mobile User"]
-get_mobile_login_ratelimit = 5
-get_mobile_otp_ratelimit = 5
+get_mobile_login_ratelimit = 50
+get_mobile_otp_ratelimit = 50
 ACCESS_TOKEN_TTL_SECONDS = 60 * 60 * 24
 REFRESH_TOKEN_TTL_DAYS = 30
 
@@ -159,7 +159,6 @@ def _build_auth_response(
 		"user": user.name,
 		"full_name": user.full_name,
 		"access_token": access_token,
-		"token": access_token,  # backward compatibility
 	}
 	if refresh_token:
 		response["refresh_token"] = refresh_token
@@ -195,8 +194,8 @@ def login(username: str | None = None, password: str | None = None) -> None:
 			)
 		)
 
-	except frappe.AuthenticationError:
-		frappe.throw(_("Invalid username or password or user is not allowed to use mobile app"))
+	# except frappe.AuthenticationError:
+	# 	frappe.throw(_("Invalid username or password or user is not allowed to use mobile app"))
 	except frappe.PermissionError:
 		frappe.throw(_("Not allowed to use mobile app"))
 	except Exception as e:

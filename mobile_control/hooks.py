@@ -148,23 +148,9 @@ app_license = "mit"
 # Scheduled Tasks
 # ---------------
 
-# scheduler_events = {
-# 	"all": [
-# 		"mobile_control.tasks.all"
-# 	],
-# 	"daily": [
-# 		"mobile_control.tasks.daily"
-# 	],
-# 	"hourly": [
-# 		"mobile_control.tasks.hourly"
-# 	],
-# 	"weekly": [
-# 		"mobile_control.tasks.weekly"
-# 	],
-# 	"monthly": [
-# 		"mobile_control.tasks.monthly"
-# 	],
-# }
+scheduler_events = {
+	"daily": ["mobile_control.tasks.cleanup_mobile_refresh_tokens"],
+}
 
 # Testing
 # -------
@@ -200,7 +186,7 @@ override_whitelisted_methods = {
 
 # Request Events
 # ----------------
-# before_request = ["mobile_control.utils.before_request"]
+before_request = ["mobile_control.api.jwt_auth.token_auth_middleware"]
 # after_request = ["mobile_control.utils.after_request"]
 
 # Job Events
