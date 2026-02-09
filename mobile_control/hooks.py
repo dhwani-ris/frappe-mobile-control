@@ -174,9 +174,13 @@ app_license = "mit"
 # Overriding Methods
 # ------------------------------
 #
-# override_whitelisted_methods = {
-# 	"frappe.desk.doctype.event.event.get_events": "mobile_control.event.get_events"
-# }
+override_whitelisted_methods = {
+	"mobile_auth.login": "mobile_control.api.api_auth.login",
+	"mobile_auth.logout": "mobile_control.api.api_auth.logout",
+	"mobile_auth.send_otp": "mobile_control.api.api_auth.send_mobile_otp",
+	"mobile_auth.verify_otp": "mobile_control.api.api_auth.verify_mobile_otp",
+	"mobile_auth.refresh_token": "mobile_control.api.api_auth.refresh_token",
+}
 #
 # each overriding function accepts a `data` argument;
 # generated from the base implementation of the doctype dashboard,
@@ -246,4 +250,8 @@ app_license = "mit"
 # ------------
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
+
+# Fixtures
+# --------
+fixtures = [{"doctype": "Role", "filters": {"name": ["in", ["Mobile User"]]}}]
 
