@@ -8,7 +8,10 @@
  "field_order": [
   "mobile_doctype",
   "column_break_coiu",
-  "group_name"
+  "group_name",
+  "column_break_bniz",
+  "doctype_meta_modifed_at",
+  "doctype_icon"
  ],
  "fields": [
   {
@@ -27,13 +30,29 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Group Name"
+  },
+  {
+   "fieldname": "column_break_bniz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "doctype_meta_modifed_at",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Doctype Meta Modifed At"
+  },
+  {
+   "fieldname": "doctype_icon",
+   "fieldtype": "Icon",
+   "in_list_view": 1,
+   "label": "Doctype Icon"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-02-09 12:16:25.423437",
+ "modified": "2026-02-09 17:28:41.080490",
  "modified_by": "Administrator",
  "module": "Mobile Control",
  "name": "Mobile Configuration Form",
