@@ -162,7 +162,7 @@ def _get_mobile_app_status() -> dict[str, Any]:
 		return {"enabled": False, "package_name": "", "app_title": "", "version": ""}
 
 
-@frappe.whitelist(allow_guest=True, methods=["GET"])
+@frappe.whitelist(allow_guest=True, methods=["GET"])  # no-semgrep
 def get_mobile_app_status() -> dict[str, Any]:
 	"""Guest API to fetch mobile app status and details."""
 	return _get_mobile_app_status()
