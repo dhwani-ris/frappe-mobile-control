@@ -1,0 +1,20 @@
+meta {
+  name: App Status
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{base_url}}method/mobile_auth.app_status
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  base_url: your base url
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
