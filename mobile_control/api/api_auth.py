@@ -133,12 +133,14 @@ def _get_mobile_configuration() -> list[dict[str, Any]]:
 	try:
 		config = frappe.get_single("Mobile Configuration")
 		configuration = []
-		if config.table_kxcj:
-			for row in config.table_kxcj:
+		if config.table_lwis:
+			for row in config.table_lwis:
 				configuration.append(
 					{
 						"mobile_doctype": row.mobile_doctype,
 						"group_name": row.group_name or "",
+						"doctype_meta_modifed_at": row.doctype_meta_modifed_at or "",
+						"doctype_icon": row.doctype_icon or "",
 					}
 				)
 		return configuration

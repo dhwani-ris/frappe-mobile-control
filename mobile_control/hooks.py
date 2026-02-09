@@ -144,6 +144,19 @@ app_license = "mit"
 # 		"on_trash": "method"
 # 	}
 # }
+doc_events = {
+	"DocType": {
+		"on_update": "mobile_control.mobile_control.doctype.mobile_configuration.mobile_configuration.update_doctype_meta_modified",
+	},
+	"Custom Field": {
+		"on_update": "mobile_control.mobile_control.doctype.mobile_configuration.mobile_configuration.update_doctype_meta_modified",
+		"on_trash": "mobile_control.mobile_control.doctype.mobile_configuration.mobile_configuration.update_doctype_meta_modified",
+	},
+	"Property Setter": {
+		"on_update": "mobile_control.mobile_control.doctype.mobile_configuration.mobile_configuration.update_doctype_meta_modified",
+		"on_trash": "mobile_control.mobile_control.doctype.mobile_configuration.mobile_configuration.update_doctype_meta_modified",
+	},
+}
 
 # Scheduled Tasks
 # ---------------
