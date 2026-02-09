@@ -1,0 +1,9 @@
+# Copyright (c) 2026, DHWANI RIS and contributors
+# For license information, please see license.txt
+
+# import frappe
+from frappe.model.document import Document
+
+
+class MobileConfiguration(Document):
+	pass

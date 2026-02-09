@@ -1,0 +1,95 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-02-09 12:05:24.917555",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "enabled",
+  "app_details_section",
+  "app_name",
+  "column_break_pioi",
+  "package_name",
+  "column_break_ljqr",
+  "current_version",
+  "forms_configuration_section",
+  "table_lwis"
+ ],
+ "fields": [
+  {
+   "default": "0",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": " Enabled"
+  },
+  {
+   "depends_on": "eval:doc.enabled",
+   "fieldname": "app_details_section",
+   "fieldtype": "Section Break",
+   "label": "App Details"
+  },
+  {
+   "fieldname": "app_name",
+   "fieldtype": "Data",
+   "label": "App Name",
+   "mandatory_depends_on": "eval:doc.enabled"
+  },
+  {
+   "fieldname": "column_break_pioi",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "package_name",
+   "fieldtype": "Data",
+   "label": "Package Name",
+   "mandatory_depends_on": "eval:doc.enabled"
+  },
+  {
+   "fieldname": "column_break_ljqr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "current_version",
+   "fieldtype": "Data",
+   "label": "Current Version",
+   "mandatory_depends_on": "eval:doc.enabled"
+  },
+  {
+   "depends_on": "eval:doc.enabled",
+   "fieldname": "forms_configuration_section",
+   "fieldtype": "Section Break",
+   "label": "Forms Configuration"
+  },
+  {
+   "fieldname": "table_lwis",
+   "fieldtype": "Table",
+   "options": "Mobile Configuration Form"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-02-09 12:16:55.998150",
+ "modified_by": "Administrator",
+ "module": "Mobile Control",
+ "name": "Mobile Configuration",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
