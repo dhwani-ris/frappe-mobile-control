@@ -8,7 +8,9 @@ import frappe
 from frappe import _
 from frappe.auth import LoginManager
 from frappe.rate_limiter import rate_limit
-from frappe.utils import add_days, now_datetime, validate_phone_number
+from frappe.utils import add_days
+from frappe.utils import now_datetime
+from frappe.utils import validate_phone_number
 
 from .jwt_auth import encode_api_credentials
 
@@ -175,9 +177,7 @@ def login(username: str | None = None, password: str | None = None) -> None:
 		_validate_mobile_user_role()
 		_ensure_api_credentials(user)
 		access_token = _generate_auth_token(user)
-		refresh_token = _create_refresh_token(
-			user, device_id=_get_device_id(), user_agent=_get_user_agent()
-		)
+		refresh_token = _create_refresh_token(user, device_id=_get_device_id(), user_agent=_get_user_agent())
 
 		frappe.local.login_manager.logout()
 

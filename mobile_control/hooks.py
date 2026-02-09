@@ -254,4 +254,3 @@ override_whitelisted_methods = {
 # Fixtures
 # --------
 fixtures = [{"doctype": "Role", "filters": {"name": ["in", ["Mobile User"]]}}]
-
