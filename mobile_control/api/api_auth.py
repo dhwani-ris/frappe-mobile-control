@@ -128,11 +128,11 @@ def _clear_login_response() -> None:
 	frappe.response.pop("full_name", None)
 
 
-def _get_mobile_configuration() -> list[dict[str, Any]]:
-	"""Get mobile configuration from Single doctype"""
+def _get_mobile_configuration_payload() -> dict[str, Any]:
+	"""Get mobile configuration and app status from Single doctype."""
 	try:
 		config = frappe.get_single("Mobile Configuration")
-		configuration = []
+		configuration: list[dict[str, Any]] = []
 		if config.table_lwis:
 			for row in config.table_lwis:
 				configuration.append(
@@ -143,31 +143,40 @@ def _get_mobile_configuration() -> list[dict[str, Any]]:
 						"doctype_icon": row.doctype_icon or "",
 					}
 				)
-		return configuration
-	except Exception:
-		# Return empty list if configuration doesn't exist or error occurs
-		return []
-
-
-def _get_mobile_app_status() -> dict[str, Any]:
-	"""Return mobile configuration app status"""
-	try:
-		config = frappe.get_single("Mobile Configuration")
 		enabled = bool(config.enabled)
 		return {
 			"enabled": enabled,
 			"package_name": config.package_name if enabled else "",
 			"app_title": config.app_name if enabled else "",
 			"version": config.current_version if enabled else "",
+			"configuration": configuration,
 		}
 	except Exception:
-		return {"enabled": False, "package_name": "", "app_title": "", "version": ""}
+		return {
+			"enabled": False,
+			"package_name": "",
+			"app_title": "",
+			"version": "",
+			"configuration": [],
+		}
+
+
+@frappe.whitelist(methods=["GET"])
+def get_mobile_configuration() -> list[dict[str, Any]]:
+	"""Guest API to fetch mobile configuration list."""
+	return _get_mobile_configuration_payload().get("configuration", [])
 
 
 @frappe.whitelist(allow_guest=True, methods=["GET"])  # no-semgrep
 def get_mobile_app_status() -> dict[str, Any]:
 	"""Guest API to fetch mobile app status and details."""
-	return _get_mobile_app_status()
+	payload = _get_mobile_configuration_payload()
+	return {
+		"enabled": payload["enabled"],
+		"package_name": payload["package_name"],
+		"app_title": payload["app_title"],
+		"version": payload["version"],
+	}
 
 
 def _build_auth_response(
@@ -206,7 +215,7 @@ def login(username: str | None = None, password: str | None = None) -> None:
 		_clear_login_response()
 
 		# Get mobile configuration
-		mobile_config = _get_mobile_configuration()
+		mobile_config = _get_mobile_configuration_payload().get("configuration", [])
 
 		frappe.local.response.update(
 			_build_auth_response(
@@ -343,7 +352,7 @@ def verify_mobile_otp(tmp_id: str, otp: str) -> None:
 		_clear_login_response()
 
 		# Get mobile configuration
-		mobile_config = _get_mobile_configuration()
+		mobile_config = _get_mobile_configuration_payload().get("configuration", [])
 
 		frappe.local.response.update(
 			_build_auth_response(

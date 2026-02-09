@@ -180,6 +180,7 @@ override_whitelisted_methods = {
 	"mobile_auth.verify_otp": "mobile_control.api.api_auth.verify_mobile_otp",
 	"mobile_auth.refresh_token": "mobile_control.api.api_auth.refresh_token",
 	"mobile_auth.app_status": "mobile_control.api.api_auth.get_mobile_app_status",
+	"mobile_auth.configuration": "mobile_control.api.api_auth.get_mobile_configuration",
 }
 #
 # each overriding function accepts a `data` argument;
