@@ -179,6 +179,27 @@ def get_mobile_app_status() -> dict[str, Any]:
 	}
 
 
+def _get_mobile_app_status() -> dict[str, Any]:
+	"""Return mobile configuration app status"""
+	try:
+		config = frappe.get_single("Mobile Configuration")
+		enabled = bool(config.enabled)
+		return {
+			"enabled": enabled,
+			"package_name": config.package_name if enabled else "",
+			"app_title": config.app_name if enabled else "",
+			"version": config.current_version if enabled else "",
+		}
+	except Exception:
+		return {"enabled": False, "package_name": "", "app_title": "", "version": ""}
+
+
+@frappe.whitelist(allow_guest=True, methods=["GET"])  # no-semgrep
+def get_mobile_app_status() -> dict[str, Any]:
+	"""Guest API to fetch mobile app status and details."""
+	return _get_mobile_app_status()
+
+
 def _build_auth_response(
 	user: Any,
 	access_token: str,
