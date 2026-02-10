@@ -15,7 +15,7 @@ bench install-app mobile_control
 ### Mobile Auth API
 
 These endpoints are exposed as whitelisted methods and are intended for a mobile
-client. All endpoints expect `POST` requests and use the `api/method/` route.
+client. All endpoints expect `POST` requests and use the `api/v2/method/` route.
 
 Endpoints:
 
@@ -42,7 +42,7 @@ Client flow:
 All requests use:
 
 ```
-POST {{base_url}}/api/method/<endpoint>
+POST {{base_url}}/api/v2/method/<endpoint>
 ```
 
 Login:
