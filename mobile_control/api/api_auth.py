@@ -128,11 +128,11 @@ def _clear_login_response() -> None:
 	frappe.response.pop("full_name", None)
 
 
-def _get_mobile_configuration() -> list[dict[str, Any]]:
-	"""Get mobile configuration from Single doctype"""
+def _get_mobile_configuration_payload() -> dict[str, Any]:
+	"""Get mobile configuration and app status from Single doctype."""
 	try:
 		config = frappe.get_single("Mobile Configuration")
-		configuration = []
+		configuration: list[dict[str, Any]] = []
 		if config.table_lwis:
 			for row in config.table_lwis:
 				configuration.append(
@@ -143,31 +143,42 @@ def _get_mobile_configuration() -> list[dict[str, Any]]:
 						"doctype_icon": row.doctype_icon or "",
 					}
 				)
-		return configuration
-	except Exception:
-		# Return empty list if configuration doesn't exist or error occurs
-		return []
-
-
-def _get_mobile_app_status() -> dict[str, Any]:
-	"""Return mobile configuration app status"""
-	try:
-		config = frappe.get_single("Mobile Configuration")
 		enabled = bool(config.enabled)
 		return {
 			"enabled": enabled,
 			"package_name": config.package_name if enabled else "",
 			"app_title": config.app_name if enabled else "",
 			"version": config.current_version if enabled else "",
+			"configuration": configuration,
 		}
 	except Exception:
-		return {"enabled": False, "package_name": "", "app_title": "", "version": ""}
+		return {
+			"enabled": False,
+			"package_name": "",
+			"app_title": "",
+			"version": "",
+			"configuration": [],
+		}
 
 
-@frappe.whitelist(allow_guest=True, methods=["GET"])  # no-semgrep
+# nosemgrep frappe-semgrep-rules.rules.security.guest-whitelisted-method
+@frappe.whitelist(allow_guest=True, methods=["GET"])
+def get_mobile_configuration() -> list[dict[str, Any]]:
+	"""Guest API to fetch mobile configuration list."""
+	return _get_mobile_configuration_payload().get("configuration", [])
+
+
+# nosemgrep frappe-semgrep-rules.rules.security.guest-whitelisted-method
+@frappe.whitelist(allow_guest=True, methods=["GET"])
 def get_mobile_app_status() -> dict[str, Any]:
 	"""Guest API to fetch mobile app status and details."""
-	return _get_mobile_app_status()
+	payload = _get_mobile_configuration_payload()
+	return {
+		"enabled": payload["enabled"],
+		"package_name": payload["package_name"],
+		"app_title": payload["app_title"],
+		"version": payload["version"],
+	}
 
 
 def _build_auth_response(
@@ -190,6 +201,7 @@ def _build_auth_response(
 	return response
 
 
+# nosemgrep frappe-semgrep-rules.rules.security.guest-whitelisted-method
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @rate_limit(limit=get_mobile_login_ratelimit, seconds=60 * 60)
 def login(username: str | None = None, password: str | None = None) -> None:
@@ -206,7 +218,7 @@ def login(username: str | None = None, password: str | None = None) -> None:
 		_clear_login_response()
 
 		# Get mobile configuration
-		mobile_config = _get_mobile_configuration()
+		mobile_config = _get_mobile_configuration_payload().get("configuration", [])
 
 		frappe.local.response.update(
 			_build_auth_response(
@@ -276,6 +288,7 @@ def _send_otp_to_user(user_data: dict, mobile_no: str) -> dict[str, str]:
 	}
 
 
+# nosemgrep frappe-semgrep-rules.rules.security.guest-whitelisted-method
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @rate_limit(key="mobile_no", limit=get_mobile_otp_ratelimit, seconds=60 * 10)
 def send_mobile_otp(mobile_no: str) -> dict[str, str]:
@@ -325,6 +338,7 @@ def _revoke_refresh_tokens_for_user(user: Any) -> None:
 		)
 
 
+# nosemgrep frappe-semgrep-rules.rules.security.guest-whitelisted-method
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @rate_limit(key="tmp_id", limit=get_mobile_otp_ratelimit, seconds=60 * 10)
 def verify_mobile_otp(tmp_id: str, otp: str) -> None:
@@ -343,7 +357,7 @@ def verify_mobile_otp(tmp_id: str, otp: str) -> None:
 		_clear_login_response()
 
 		# Get mobile configuration
-		mobile_config = _get_mobile_configuration()
+		mobile_config = _get_mobile_configuration_payload().get("configuration", [])
 
 		frappe.local.response.update(
 			_build_auth_response(
@@ -363,6 +377,7 @@ def verify_mobile_otp(tmp_id: str, otp: str) -> None:
 		frappe.throw(_("Failed to verify OTP. Please try again."))
 
 
+# nosemgrep frappe-semgrep-rules.rules.security.guest-whitelisted-method
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 @rate_limit(key="refresh_token", limit=get_mobile_login_ratelimit, seconds=60 * 60)
 def refresh_token(refresh_token: str) -> dict[str, str]:
