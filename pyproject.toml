@@ -15,9 +15,8 @@ dependencies = [
 requires = ["flit_core >=3.4,<4"]
 build-backend = "flit_core.buildapi"
 
-# These dependencies are only installed when developer mode is enabled
-[tool.bench.dev-dependencies]
-# package_name = "~=1.1.0"
+[tool.bench]
+frappe-dependencies = { frappe = ">=16.0.0,<17.0.0" }
 
 [tool.bench.frappe-dependencies]
 frappe = ">=15.0.0,<16.0.0"
@@ -50,6 +49,7 @@ ignore = [
     "F405", # can't detect undefined names from * import
     "F722", # syntax error in forward type annotation
     "W191", # indentation contains tabs
+    "RUF001", # string contains ambiguous unicode character
 ]
 typing-modules = ["frappe.types.DF"]
 
@@ -61,6 +61,8 @@ docstring-code-format = true
 [tool.ruff.lint.isort]
 no-lines-before = ["first-party"]
 force-single-line = true
- 
-[tool.bench.frappe-dependencies]
-frappe = ">=16.0.0,<17.0.0"
+
+[project.urls]
+Homepage = "https://github.com/dhwani-ris/frappe_mobile_control"
+Repository = "https://github.com/dhwani-ris/frappe_mobile_control"
+"Bug Reports" = "https://github.com/dhwani-ris/frappe_mobile_control/issues"

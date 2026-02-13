@@ -1,9 +1,10 @@
 # mobile_control/api/jwt_auth.py
 
+"""JWT/Token encoding and decoding utilities."""
+
 import ast
 import time
 from datetime import datetime
-from datetime import timedelta
 
 import frappe
 from cryptography.fernet import Fernet
