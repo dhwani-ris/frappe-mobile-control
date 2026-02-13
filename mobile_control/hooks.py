@@ -176,8 +176,8 @@ scheduler_events = {
 override_whitelisted_methods = {
 	"mobile_auth.login": "mobile_control.api.api_auth.login",
 	"mobile_auth.logout": "mobile_control.api.api_auth.logout",
-	"mobile_auth.send_otp": "mobile_control.api.api_auth.send_mobile_otp",
-	"mobile_auth.verify_otp": "mobile_control.api.api_auth.verify_mobile_otp",
+	"mobile_auth.send_login_otp": "mobile_control.api.api_auth.send_mobile_otp",
+	"mobile_auth.verify_login_otp": "mobile_control.api.api_auth.verify_mobile_otp",
 	"mobile_auth.refresh_token": "mobile_control.api.api_auth.refresh_token",
 	"mobile_auth.app_status": "mobile_control.api.api_auth.get_mobile_app_status",
 	"mobile_auth.configuration": "mobile_control.api.api_auth.get_mobile_configuration",

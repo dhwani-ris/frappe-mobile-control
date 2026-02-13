@@ -21,8 +21,8 @@ Endpoints:
 
 - `mobile_auth.login` - Login with username/password.
 - `mobile_auth.logout` - Logout and revoke refresh tokens.
-- `mobile_auth.send_otp` - Send OTP to mobile number.
-- `mobile_auth.verify_otp` - Verify OTP and login.
+- `mobile_auth.send_login_otp` - Send OTP to mobile number for login.
+- `mobile_auth.verify_login_otp` - Verify OTP and complete login.
 - `mobile_auth.refresh_token` - Refresh access token using refresh token.
 
 Response tokens:
