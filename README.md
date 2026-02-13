@@ -24,6 +24,7 @@ Endpoints:
 - `mobile_auth.send_login_otp` - Send OTP to mobile number for login.
 - `mobile_auth.verify_login_otp` - Verify OTP and complete login.
 - `mobile_auth.refresh_token` - Refresh access token using refresh token.
+- `mobile_auth.permissions` - Get current user permissions (requires authentication).
 
 Response tokens:
 
@@ -36,6 +37,12 @@ Client flow:
 2. Use `access_token` as `Authorization: Bearer <access_token>` for API calls.
 3. When access token expires, call `mobile_auth.refresh_token` with the
    `refresh_token` to get a new pair.
+
+User permissions:
+
+- Permissions are automatically included in login, OTP verify, and refresh token responses.
+- Permissions include user roles and doctype-level permissions (read, write, create, delete, submit, cancel, amend) for mobile-configured doctypes.
+- To refresh permissions without re-authenticating, call `mobile_auth.permissions` endpoint.
 
 #### Request Examples
 
@@ -83,6 +90,31 @@ Logout:
 
 ```
 Authorization: Bearer <access_token>
+```
+
+Get permissions:
+
+```
+GET {{base_url}}/api/method/mobile_auth.permissions
+Authorization: Bearer <access_token>
+```
+
+Response includes:
+```json
+{
+  "roles": ["Mobile User", "System Manager"],
+  "permissions": {
+    "Customer": {
+      "read": true,
+      "write": true,
+      "create": true,
+      "delete": false,
+      "submit": true,
+      "cancel": false,
+      "amend": false
+    }
+  }
+}
 ```
 
 #### Bruno Collection
