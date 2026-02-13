@@ -255,7 +255,8 @@ def logout() -> dict[str, str]:
 
 def _validate_mobile_otp_prerequisites() -> None:
 	"""Validate mobile OTP prerequisites"""
-	from frappe.utils.mobile_otp import is_mobile_otp_login_enabled
+	# TODO: Remove this once we have this funtionlity in frappe core
+	from mobile_control.api.mobile_otp import is_mobile_otp_login_enabled
 
 	if not is_mobile_otp_login_enabled():
 		frappe.throw(_("Mobile OTP login is not enabled"), frappe.AuthenticationError)
@@ -267,7 +268,7 @@ def _validate_mobile_otp_prerequisites() -> None:
 
 def _find_user_by_mobile(mobile_no: str) -> dict[str, str]:
 	"""Find user by mobile number"""
-	from frappe.utils.mobile_otp import find_user_by_mobile
+	from mobile_control.api.mobile_otp import find_user_by_mobile
 
 	if not mobile_no:
 		frappe.throw(_("Mobile number is required"), frappe.ValidationError)
@@ -277,7 +278,7 @@ def _find_user_by_mobile(mobile_no: str) -> dict[str, str]:
 
 def _send_otp_to_user(user_data: dict, mobile_no: str) -> dict[str, str]:
 	"""Send OTP to user and return result"""
-	from frappe.utils.mobile_otp import send_mobile_login_otp
+	from mobile_control.api.mobile_otp import send_mobile_login_otp
 
 	result = send_mobile_login_otp(user_data.name, mobile_no)
 	return {
