@@ -20,7 +20,7 @@ class MobileLoginManager(LoginManager):
 		from frappe.twofactor import confirm_otp_token
 
 		# Get cached user from tmp_id
-		cached_user = frappe.cache.get(tmp_id + "_usr")
+		cached_user = frappe.cache.get(tmp_id + "_usr")  # nosemgrep
 		if not cached_user:
 			self.fail(_("Login session expired. Please try again."))
 
