@@ -5,7 +5,6 @@ import frappe
 import pyotp
 from frappe import _
 from frappe.auth import get_login_attempt_tracker
-from frappe.model.utils.mask import mask_field_value
 from frappe.twofactor import get_otpsecret_for_
 from frappe.twofactor import send_token_via_sms
 from frappe.utils import cint
@@ -73,6 +72,8 @@ def cache_mobile_otp_data(user: str, token: int, otp_secret: str, tmp_id: str) -
 
 def send_mobile_login_otp(user: str, mobile_no: str) -> dict[str, str]:
 	"""Validate settings, generate OTP, cache it, send via SMS (or hook). Returns message, tmp_id, masked mobile_no."""
+	from frappe.model.utils.mask import mask_field_value
+
 	validate_mobile_otp_prerequisites()
 
 	token, otp_secret = generate_mobile_otp(user)
