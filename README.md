@@ -32,6 +32,46 @@ Response tokens:
 - `access_token` expires in 24 hours.
 - `refresh_token` expires in 30 days and is rotated on every refresh.
 
+#### Auth response shape (login, verify OTP, refresh token)
+
+Login, `mobile_auth.verify_login_otp`, and `mobile_auth.refresh_token` return a response like:
+
+```json
+{
+  "message": "Logged In",
+  "user": "user@example.com",
+  "full_name": "User Name",
+  "language": "en",
+  "access_token": "...",
+  "refresh_token": "...",
+  "mobile_form_names": [
+    {
+      "mobile_doctype": "Mobile Refresh Token",
+      "group_name": "",
+      "doctype_meta_modifed_at": "2026-02-14 14:40:49.962439",
+      "doctype_icon": ""
+    }
+  ],
+  "roles": ["Mobile User", "All", "Desk User"],
+  "permissions": [
+    {
+      "doctype": "Mobile Refresh Token",
+      "read": true,
+      "write": false,
+      "create": true,
+      "delete": false,
+      "submit": false,
+      "cancel": false,
+      "amend": false
+    }
+  ]
+}
+```
+
+- `language` is the user's language (default `"en"` if blank).
+- `roles` is an array of role names.
+- `permissions` is an array of objects; each has `doctype` and the flags `read`, `write`, `create`, `delete`, `submit`, `cancel`, `amend`.
+
 Client flow:
 
 1. Login or OTP verify to receive `access_token` + `refresh_token`.
@@ -104,12 +144,13 @@ GET {{base_url}}/api/method/mobile_auth.permissions
 Authorization: Bearer <access_token>
 ```
 
-Response includes:
+Response:
 ```json
 {
   "roles": ["Mobile User", "System Manager"],
-  "permissions": {
-    "Customer": {
+  "permissions": [
+    {
+      "doctype": "Customer",
       "read": true,
       "write": true,
       "create": true,
@@ -118,21 +159,31 @@ Response includes:
       "cancel": false,
       "amend": false
     }
-  }
+  ]
 }
 ```
 
 #### Bruno Collection
 
-The `API/` directory contains a Bruno collection to try the endpoints:
+The `API/` directory contains a Bruno collection to try the mobile auth endpoints locally.
 
-- `API/bruno.json` - Collection config
-- `API/Login with username and password.bru`
-- `API/Get Access Token.bru`
-- `API/Logout.bru`
+**Collection:** `API/bruno.json`
 
-Update the `base_url`, `username`, and `password` variables inside the Bruno
-requests before running them.
+**Requests:**
+
+| File | Description |
+|------|-------------|
+| `Login with username and password.bru` | POST login with username/password; returns `access_token`, `refresh_token`, `roles`, `permissions`, `language`. |
+| `Login with mobile.bru` | POST send OTP to mobile number (`mobile_auth.send_login_otp`). |
+| `Login with mobile verify.bru` | POST verify OTP and login (`mobile_auth.verify_login_otp`). |
+| `Get Access Token.bru` | POST refresh token to get new `access_token` and `refresh_token`. |
+| `Logout.bru` | POST logout (Bearer token required); revokes refresh tokens. |
+| `permissions.bru` | GET current user roles and permissions (Bearer token required). |
+| `get_translations.bru` | GET translation dictionary; optional `?lang=hi` (Bearer token required). |
+| `App Status.bru` | GET app status (enabled, package_name, app_title, version). Guest. |
+| `App Configuration.bru` | GET mobile configuration list. Guest. |
+
+**Setup:** Set `base_url` in collection/environment variables. For auth requests, set `username`, `password`, and after login use the returned `access_token` as Bearer token in subsequent requests (or use Bruno’s response scripts to save the token).
 
 
 ### Contributing
