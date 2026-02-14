@@ -25,6 +25,7 @@ Endpoints:
 - `mobile_auth.verify_login_otp` - Verify OTP and complete login.
 - `mobile_auth.refresh_token` - Refresh access token using refresh token.
 - `mobile_auth.permissions` - Get current user permissions (requires authentication).
+- `mobile_auth.get_translations` - Get full translation dictionary for a language (requires authentication).
 
 Response tokens:
 
@@ -43,6 +44,10 @@ User permissions:
 - Permissions are automatically included in login, OTP verify, and refresh token responses.
 - Permissions include user roles and doctype-level permissions (read, write, create, delete, submit, cancel, amend) for mobile-configured doctypes.
 - To refresh permissions without re-authenticating, call `mobile_auth.permissions` endpoint.
+
+Translations:
+
+- Call `GET /api/method/mobile_auth.get_translations?lang=hi` (Bearer token required). Omit `lang` for English (`en`). Response: `{ "lang": "hi", "translations": { "source text": "translated text", ... } }`. Use `translations[source] ?? source` for lookup.
 
 #### Request Examples
 

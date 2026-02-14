@@ -214,3 +214,33 @@ def get_user_permissions() -> dict[str, Any]:
 	except Exception as e:
 		frappe.log_error(f"Error fetching user permissions: {e}")
 		frappe.throw(_("Failed to fetch permissions"))
+
+
+@frappe.whitelist(methods=["GET"])
+def get_translations(lang: str | None = None) -> dict[str, Any]:
+	"""Return the full translation dictionary for a given language. Authenticated users only."""
+	if frappe.session.user == "Guest":
+		frappe.throw(_("Authentication required"), frappe.AuthenticationError)
+
+	if not (lang and str(lang).strip()):
+		lang = "en"
+	else:
+		lang = str(lang).strip()
+
+	try:
+		from frappe.translate import get_all_languages
+
+		allowed = get_all_languages()
+		if allowed and lang not in allowed:
+			lang = "en"
+	except Exception:
+		lang = "en"
+
+	from frappe.translate import get_all_translations
+
+	translations = get_all_translations(lang)
+
+	return {
+		"lang": lang,
+		"translations": translations,
+	}
