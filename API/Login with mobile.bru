@@ -1,0 +1,26 @@
+meta {
+  name: Login with mobile
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{base_url}}method/mobile_auth.send_login_otp
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "mobile_no" : "8578589685"
+  }
+}
+
+vars:pre-request {
+  base_url: your base url
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

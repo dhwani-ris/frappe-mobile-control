@@ -1,0 +1,27 @@
+meta {
+  name: Login with mobile verify
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{base_url}}method/mobile_auth.verify_login_otp
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "tmp_id": "TMP_ID_FROM_SEND_OTP",
+    "otp": "123456"
+  }
+}
+
+vars:pre-request {
+  base_url: your base url
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

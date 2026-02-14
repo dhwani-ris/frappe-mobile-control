@@ -27,10 +27,14 @@ def build_auth_response(
 	include_permissions: bool = True,
 ) -> dict[str, Any]:
 	"""Build authentication response with tokens and user data."""
+	user_lang = (
+		getattr(user, "language", None) or frappe.db.get_value("User", user.name, "language") or ""
+	).strip() or "en"
 	response = {
 		"message": message or _("Logged In"),
 		"user": user.name,
 		"full_name": user.full_name,
+		"language": user_lang,
 		"access_token": access_token,
 	}
 	if refresh_token:
@@ -38,7 +42,9 @@ def build_auth_response(
 	if mobile_config is not None:
 		response["mobile_form_names"] = mobile_config
 	if include_permissions:
-		response["permissions"] = get_user_permissions(user)
+		perms = get_user_permissions(user)
+		response["roles"] = perms["roles"]
+		response["permissions"] = perms["permissions"]
 	return response
 
 
