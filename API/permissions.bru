@@ -1,0 +1,24 @@
+meta {
+  name: permissions
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{base_url}}method/mobile_auth.permissions
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: your token
+}
+
+vars:pre-request {
+  base_url: your base url
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
