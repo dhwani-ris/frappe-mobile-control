@@ -217,30 +217,37 @@ def get_user_permissions() -> dict[str, Any]:
 
 
 @frappe.whitelist(methods=["GET"])
-def get_translations(lang: str | None = None) -> dict[str, Any]:
-	"""Return the full translation dictionary for a given language. Authenticated users only."""
+def get_translations(lang: str | None = None, all: str | None = None) -> dict[str, Any]:
+	"""Return translation dictionary for one or more languages. Authenticated users only.
+
+	- lang: language code(s), comma-separated for multiple (e.g. "hi" or "hi,en"). Default "en".
+	- all: if set to "1" or "true", return full translations (apps + DB); otherwise only DB translations.
+	"""
 	if frappe.session.user == "Guest":
 		frappe.throw(_("Authentication required"), frappe.AuthenticationError)
 
 	if not (lang and str(lang).strip()):
-		lang = "en"
+		langs = ["en"]
 	else:
-		lang = str(lang).strip()
+		langs = [l.strip() for l in str(lang).strip().split(",") if l.strip()] or ["en"]
+
+	# Resolve scope: explicit "all" -> full translations; default -> DB only
+	use_all = str(all or frappe.form_dict.get("all") or "").strip().lower() in ("1", "true", "yes")
 
 	try:
 		from frappe.translate import get_all_languages
 
-		allowed = get_all_languages()
-		if allowed and lang not in allowed:
-			lang = "en"
+		allowed = get_all_languages() or []
+		langs = [l if not allowed or l in allowed else "en" for l in langs]
 	except Exception:
-		lang = "en"
+		langs = ["en"]
 
 	from frappe.translate import get_all_translations
+	from frappe.translate import get_user_translations
 
-	translations = get_all_translations(lang)
+	get_fn = get_all_translations if use_all else get_user_translations
 
 	return {
-		"lang": lang,
-		"translations": translations,
+		"langs": langs,
+		"translations": {l: get_fn(l) for l in langs},
 	}

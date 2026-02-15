@@ -25,7 +25,7 @@ Endpoints:
 - `mobile_auth.verify_login_otp` - Verify OTP and complete login.
 - `mobile_auth.refresh_token` - Refresh access token using refresh token.
 - `mobile_auth.permissions` - Get current user permissions (requires authentication).
-- `mobile_auth.get_translations` - Get full translation dictionary for a language (requires authentication).
+- `mobile_auth.get_translations` - Get translation dictionary for one or more languages (requires authentication). By default returns DB translations only; use `all=1` for full (apps + DB). Use `lang=hi,en` for multiple languages.
 
 Response tokens:
 
@@ -87,7 +87,7 @@ User permissions:
 
 Translations:
 
-- Call `GET /api/method/mobile_auth.get_translations?lang=hi` (Bearer token required). Omit `lang` for English (`en`). Response: `{ "lang": "hi", "translations": { "source text": "translated text", ... } }`. Use `translations[source] ?? source` for lookup.
+- Call `GET /api/method/mobile_auth.get_translations?lang=hi` (Bearer token required). Omit `lang` for English (`en`). By default only **DB translations** (Translation doctype) are returned. Add `&all=1` or `&all=true` to get **full translations** (apps CSV/MO + DB). For **multiple languages**, use comma-separated codes: `?lang=hi,en`. Response is always the same shape: `{ "langs": ["hi"], "translations_by_lang": { "hi": { "source text": "translated text", ... } } }` (or multiple keys in `langs` and `translations_by_lang`). Use `translations_by_lang[lang][source] ?? source` for lookup.
 
 #### Request Examples
 

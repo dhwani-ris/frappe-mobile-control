@@ -4,18 +4,19 @@ meta {
   seq: 9
 }
 
+# Optional query: ?lang=hi (or lang=hi,en for multiple); &all=1 for full translations (default: DB only)
 get {
-  url: {{base_url}}method/mobile_auth.permissions
+  url: {{base_url}}method/mobile_auth.get_translations
   body: none
   auth: bearer
 }
 
 auth:bearer {
-  token: your token
+  token: gAAAAABpkD0ZpwWOVR2C9EJ35A-jqgZ6ZFToHhxUFyZBkHB2xKFrn4ho4eVG2qxGYIlGgSk5YIG4otS0YBrByIxMU4GXhIKbQsBIDyV2j6zKfbVJ3_w1ronls27OKhL3ZBMFY8YAK89tLmoOpEcxqtjn148Go9oHB2UqrBUqqrBEAfWHKtlvL8xAHDlUEUIjxLcg4evxedXJ6M_flxtrQjel35kD6ASzAkzE0pq6uelMbrwhllpjjEg=
 }
 
 vars:pre-request {
-  base_url: your base url
+  base_url: http://hufdms.local:8000/api/v2/
 }
 
 settings {
