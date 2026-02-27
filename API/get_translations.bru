@@ -4,8 +4,9 @@ meta {
   seq: 9
 }
 
+# Optional query: ?lang=hi (or lang=hi,en for multiple); &all=1 for full translations (default: DB only)
 get {
-  url: {{base_url}}method/mobile_auth.permissions
+  url: {{base_url}}method/mobile_auth.get_translations
   body: none
   auth: bearer
 }

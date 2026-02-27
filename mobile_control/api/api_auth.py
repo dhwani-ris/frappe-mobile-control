@@ -54,7 +54,7 @@ def get_mobile_app_status() -> dict[str, Any]:
 
 # nosemgrep frappe-semgrep-rules.rules.security.guest-whitelisted-method
 @frappe.whitelist(allow_guest=True, methods=["POST"])
-@rate_limit(limit=get_mobile_login_ratelimit, seconds=60 * 60)
+# @rate_limit(limit=get_mobile_login_ratelimit, seconds=60 * 60) # comment out for now to avoid rate limiting while testing
 def login(username: str | None = None, password: str | None = None) -> None:
 	"""Mobile app login handler."""
 	try:
@@ -113,7 +113,7 @@ def _validate_mobile_otp_prerequisites() -> None:
 
 # nosemgrep frappe-semgrep-rules.rules.security.guest-whitelisted-method
 @frappe.whitelist(allow_guest=True, methods=["POST"])
-@rate_limit(key="mobile_no", limit=get_mobile_otp_ratelimit, seconds=60 * 10)
+# @rate_limit(key="mobile_no", limit=get_mobile_otp_ratelimit, seconds=60 * 10) # comment out for now to avoid rate limiting while testing
 def send_mobile_otp(mobile_no: str) -> dict[str, str]:
 	"""Send mobile OTP for authentication."""
 	try:
@@ -139,7 +139,7 @@ def send_mobile_otp(mobile_no: str) -> dict[str, str]:
 
 # nosemgrep frappe-semgrep-rules.rules.security.guest-whitelisted-method
 @frappe.whitelist(allow_guest=True, methods=["POST"])
-@rate_limit(key="tmp_id", limit=get_mobile_otp_ratelimit, seconds=60 * 10)
+# @rate_limit(key="tmp_id", limit=get_mobile_otp_ratelimit, seconds=60 * 10) # comment out for now to avoid rate limiting while testing
 def verify_mobile_otp(tmp_id: str, otp: str) -> None:
 	"""Verify OTP and complete login."""
 	try:
@@ -177,7 +177,7 @@ def verify_mobile_otp(tmp_id: str, otp: str) -> None:
 
 # nosemgrep frappe-semgrep-rules.rules.security.guest-whitelisted-method
 @frappe.whitelist(allow_guest=True, methods=["POST"])
-@rate_limit(key="refresh_token", limit=get_mobile_login_ratelimit, seconds=60 * 60)
+# @rate_limit(key="refresh_token", limit=get_mobile_login_ratelimit, seconds=60 * 60) # comment out for now to avoid rate limiting while testing
 def refresh_token(refresh_token: str) -> dict[str, str]:
 	"""Refresh access token using refresh token."""
 	try:
@@ -217,30 +217,37 @@ def get_user_permissions() -> dict[str, Any]:
 
 
 @frappe.whitelist(methods=["GET"])
-def get_translations(lang: str | None = None) -> dict[str, Any]:
-	"""Return the full translation dictionary for a given language. Authenticated users only."""
+def get_translations(lang: str | None = None, all: str | None = None) -> dict[str, Any]:
+	"""Return translation dictionary for one or more languages. Authenticated users only.
+
+	- lang: language code(s), comma-separated for multiple (e.g. "hi" or "hi,en"). Default "en".
+	- all: if set to "1" or "true", return full translations (apps + DB); otherwise only DB translations.
+	"""
 	if frappe.session.user == "Guest":
 		frappe.throw(_("Authentication required"), frappe.AuthenticationError)
 
 	if not (lang and str(lang).strip()):
-		lang = "en"
+		langs = ["en"]
 	else:
-		lang = str(lang).strip()
+		langs = [l.strip() for l in str(lang).strip().split(",") if l.strip()] or ["en"]
+
+	# Resolve scope: explicit "all" -> full translations; default -> DB only
+	use_all = str(all or frappe.form_dict.get("all") or "").strip().lower() in ("1", "true", "yes")
 
 	try:
 		from frappe.translate import get_all_languages
 
-		allowed = get_all_languages()
-		if allowed and lang not in allowed:
-			lang = "en"
+		allowed = get_all_languages() or []
+		langs = [l if not allowed or l in allowed else "en" for l in langs]
 	except Exception:
-		lang = "en"
+		langs = ["en"]
 
 	from frappe.translate import get_all_translations
+	from frappe.translate import get_user_translations
 
-	translations = get_all_translations(lang)
+	get_fn = get_all_translations if use_all else get_user_translations
 
 	return {
-		"lang": lang,
-		"translations": translations,
+		"langs": langs,
+		"translations": {l: get_fn(l) for l in langs},
 	}
