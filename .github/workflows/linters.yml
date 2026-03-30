@@ -2,7 +2,6 @@
 name: Linters
 
 on:
-  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -41,7 +40,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: '3.14'
           cache: pip
 
       - name: Download Semgrep rules
@@ -59,7 +58,7 @@ jobs:
     steps:
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: '3.14'
 
       - uses: actions/checkout@v4
 
@@ -87,7 +86,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: '3.14'
           cache: pip
       - uses: pre-commit/action@v3.0.1
       - name: Check for pre-commit config
