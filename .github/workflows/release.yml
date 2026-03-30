@@ -2,13 +2,6 @@ name: Generate Semantic Release
 on:
   push:
     branches: [ main, master ]
-  workflow_dispatch:
-    inputs:
-      force_release:
-        description: 'Force release even if no changes detected'
-        required: false
-        default: 'false'
-        type: boolean
       
 permissions:
   contents: write
@@ -16,12 +9,6 @@ permissions:
   pull-requests: write
   id-token: write
   actions: read
-
-# Wait for init workflow to complete first
-# Use same concurrency group as init workflow to ensure init runs first
-concurrency:
-  group: repo-init-${{ github.repository }}-${{ github.ref }}
-  cancel-in-progress: false
   
 jobs:
   release:
@@ -60,7 +47,7 @@ jobs:
         run: |
           git config --global user.name "dhwani-release-bot"
           git config --global user.email "dhwani-release-bot[bot]@users.noreply.github.com"
-          
+         
       - name: Debug - Check commits
         run: |
           echo "=== Recent commits ==="
@@ -104,24 +91,4 @@ jobs:
           GIT_COMMITTER_NAME: "dhwani-release-bot"
           GIT_COMMITTER_EMAIL: "dhwani-release-bot[bot]@users.noreply.github.com"
           NODE_ENV: production
-        run: |
-          echo "Running semantic-release..."
-          npx semantic-release --debug || {
-            echo "Semantic-release exited with code $?"
-            echo "This might be normal if no release is needed"
-            exit 0
-          }
-          
-      - name: Verify Release Created
-        if: always()
-        run: |
-          echo "=== Checking for new releases ==="
-          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "none")
-          echo "Latest tag: $LATEST_TAG"
-          
-          if [ "$LATEST_TAG" != "none" ]; then
-            echo "✅ Release tag found: $LATEST_TAG"
-            git show-ref --tags | tail -5
-          else
-            echo "ℹ️ No new release tag created (this is normal if no semantic commits found)"
-          fi
+        run: npx semantic-release
