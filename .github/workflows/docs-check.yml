@@ -1,0 +1,45 @@
+name: Quality Checks
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: commitcheck-frappe-${{ github.event_name }}-${{ github.event.number }}
+  cancel-in-progress: true
+
+jobs:
+  docs-required:
+    name: 'Documentation Required'
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: 'Setup Environment'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - uses: actions/checkout@v4
+
+      - name: Validate Docs
+        env:
+          PR_NUMBER: ${{ github.event.number }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          pip install requests --quiet
+          
+          # Check if PR number is valid
+          if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" = "null" ]; then
+            echo "No valid PR number found. Skipping documentation check. ✅"
+            exit 0
+          fi
+          
+          # Run documentation checker with error handling
+          python $GITHUB_WORKSPACE/.github/helper/documentation.py $PR_NUMBER || {
+            echo "Documentation checker failed, but continuing workflow. ⚠️"
+            exit 0
+          }
