@@ -124,22 +124,29 @@ jobs:
           python-version: "3.14"
 
       - name: Setup Node.js
+        if: ${{ hashFiles('package.json') != '' }}
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'npm'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install pip-audit
-          npm ci
+          if [ -f package.json ]; then
+            if [ -f package-lock.json ]; then
+              npm ci
+            else
+              npm install
+            fi
+          fi
 
       - name: Check for outdated Python dependencies
         run: |
           pip list --outdated --format=freeze | grep -v '^\-e' | cut -d = -f 1 | xargs -n1 pip show || echo "No outdated Python packages found"
 
       - name: Check for outdated Node.js dependencies
+        if: ${{ hashFiles('package.json') != '' }}
         run: npm outdated || echo "No outdated Node.js packages found"
 
       - name: Run pip-audit
@@ -167,22 +174,29 @@ jobs:
           python-version: "3.14"
 
       - name: Setup Node.js
+        if: ${{ hashFiles('package.json') != '' }}
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'npm'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install build
-          npm ci
+          if [ -f package.json ]; then
+            if [ -f package-lock.json ]; then
+              npm ci
+            else
+              npm install
+            fi
+          fi
 
       - name: Build Python package
         run: |
           python -m build || echo "No Python package to build"
 
       - name: Build frontend assets
+        if: ${{ hashFiles('package.json') != '' }}
         run: |
           npm run build || echo "No build script found"
 
