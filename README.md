@@ -203,5 +203,5 @@ Pre-commit is configured to use the following tools for checking and formatting 
 - pyupgrade
 
 <p align="center">
-  <img src="logo.png" alt="Maintainers logo" width="100" />
+  <img src="logo.png" alt="Maintainers logo" width="120" />
 </p>
