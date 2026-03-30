@@ -7,11 +7,12 @@
  "field_order": [
   "enabled",
   "app_details_section",
-  "app_name",
-  "column_break_pioi",
   "package_name",
+  "column_break_pioi",
+  "minimum_app_version",
   "column_break_ljqr",
-  "current_version",
+  "maintenance_mode",
+  "maintenance_message",
   "forms_configuration_section",
   "table_lwis"
  ],
@@ -29,12 +30,6 @@
    "label": "App Details"
   },
   {
-   "fieldname": "app_name",
-   "fieldtype": "Data",
-   "label": "App Name",
-   "mandatory_depends_on": "eval:doc.enabled"
-  },
-  {
    "fieldname": "column_break_pioi",
    "fieldtype": "Column Break"
   },
@@ -49,12 +44,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "current_version",
-   "fieldtype": "Data",
-   "label": "Current Version",
-   "mandatory_depends_on": "eval:doc.enabled"
-  },
-  {
    "depends_on": "eval:doc.enabled",
    "fieldname": "forms_configuration_section",
    "fieldtype": "Section Break",
@@ -64,13 +53,32 @@
    "fieldname": "table_lwis",
    "fieldtype": "Table",
    "options": "Mobile Configuration Form"
+  },
+  {
+   "default": "0",
+   "fieldname": "maintenance_mode",
+   "fieldtype": "Check",
+   "label": "Maintenance Mode?"
+  },
+  {
+   "depends_on": "eval:doc.maintenance_mode",
+   "fieldname": "maintenance_message",
+   "fieldtype": "Small Text",
+   "label": "Maintenance Message"
+  },
+  {
+   "fieldname": "minimum_app_version",
+   "fieldtype": "Data",
+   "label": "Minimum App Version",
+   "mandatory_depends_on": "eval:doc.enabled"
   }
  ],
  "grid_page_length": 50,
+ "hide_toolbar": 1,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-02-09 17:20:28.250092",
+ "modified": "2026-03-30 19:40:16.325213",
  "modified_by": "Administrator",
  "module": "Mobile Control",
  "name": "Mobile Configuration",

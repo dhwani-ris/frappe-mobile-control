@@ -6,30 +6,19 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "mobile_doctype",
+  "mobile_workspace_item",
   "column_break_coiu",
-  "group_name",
+  "workspace_group_name",
   "column_break_bniz",
-  "doctype_meta_modifed_at",
-  "doctype_icon"
+  "doctype_icon",
+  "column_break_bbsc",
+  "order",
+  "doctype_meta_modifed_at"
  ],
  "fields": [
   {
-   "fieldname": "mobile_doctype",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Mobile Doctype",
-   "options": "DocType"
-  },
-  {
    "fieldname": "column_break_coiu",
    "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "group_name",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Group Name"
   },
   {
    "fieldname": "column_break_bniz",
@@ -38,7 +27,6 @@
   {
    "fieldname": "doctype_meta_modifed_at",
    "fieldtype": "Datetime",
-   "in_list_view": 1,
    "label": "Doctype Meta Modifed At"
   },
   {
@@ -46,13 +34,39 @@
    "fieldtype": "Icon",
    "in_list_view": 1,
    "label": "Doctype Icon"
+  },
+  {
+   "fieldname": "mobile_workspace_item",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Mobile Workspace Item",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "column_break_bbsc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "order",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Order",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "workspace_group_name",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Workspace Group Name",
+   "options": "Mobile Workspace Group"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-02-09 17:28:41.080490",
+ "modified": "2026-03-30 19:41:01.554999",
  "modified_by": "Administrator",
  "module": "Mobile Control",
  "name": "Mobile Configuration Form",
