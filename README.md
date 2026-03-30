@@ -202,8 +202,6 @@ Pre-commit is configured to use the following tools for checking and formatting 
 - prettier
 - pyupgrade
 
-### Maintainers
-
 <p align="center">
-  <img src="logo.png" alt="Maintainers logo" width="180" />
+  <img src="logo.png" alt="Maintainers logo" width="100" />
 </p>
