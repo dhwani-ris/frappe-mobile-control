@@ -13,7 +13,7 @@ class MobileConfiguration(Document):
 
 
 def _ensure_mobile_uuid_fields(config: "MobileConfiguration") -> None:
-	doctypes = {row.mobile_doctype for row in (config.table_lwis or []) if row.mobile_doctype}
+	doctypes = {row.mobile_workspace_item for row in (config.table_lwis or []) if row.mobile_workspace_item}
 	for doctype in doctypes:
 		_ensure_mobile_uuid_field(doctype)
 
@@ -63,7 +63,7 @@ def update_doctype_meta_modified(doc: Document, method: str | None = None) -> No
 		filters={
 			"parenttype": "Mobile Configuration",
 			"parentfield": "table_lwis",
-			"mobile_doctype": doctype_name,
+			"mobile_workspace_item": doctype_name,
 		},
 		pluck="name",
 	)
