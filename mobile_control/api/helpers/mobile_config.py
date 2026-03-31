@@ -17,7 +17,7 @@ def get_mobile_configuration_payload() -> dict[str, Any]:
 				configuration.append(
 					{
 						"mobile_workspace_item": row.mobile_workspace_item,
-						"group_name": row.group_name or "",
+						"group_name": row.workspace_group_name or "",
 						"doctype_meta_modifed_at": row.doctype_meta_modifed_at or "",
 						"doctype_icon": row.doctype_icon or "",
 						"order": row.order or 0,
