@@ -9,6 +9,15 @@ import frappe
 from .mobile_config import get_mobile_configuration_payload
 
 
+def _has_doctype_permission(doctype: str, ptype: str, user: str) -> bool:
+	"""Check permission with enforcement and return boolean."""
+	try:
+		frappe.has_permission(doctype, ptype, user=user, throw=True)
+		return True
+	except frappe.PermissionError:
+		return False
+
+
 def get_user_permissions(user: Any) -> dict[str, Any]:
 	"""Get user permissions: roles array and permissions array (one object per doctype)."""
 	try:
@@ -25,13 +34,13 @@ def get_user_permissions(user: Any) -> dict[str, Any]:
 				permissions_list.append(
 					{
 						"doctype": workspace_item,
-						"read": frappe.has_permission(workspace_item, "read", user=user.name),
-						"write": frappe.has_permission(workspace_item, "write", user=user.name),
-						"create": frappe.has_permission(workspace_item, "create", user=user.name),
-						"delete": frappe.has_permission(workspace_item, "delete", user=user.name),
-						"submit": frappe.has_permission(workspace_item, "submit", user=user.name),
-						"cancel": frappe.has_permission(workspace_item, "cancel", user=user.name),
-						"amend": frappe.has_permission(workspace_item, "amend", user=user.name),
+						"read": _has_doctype_permission(workspace_item, "read", user.name),
+						"write": _has_doctype_permission(workspace_item, "write", user.name),
+						"create": _has_doctype_permission(workspace_item, "create", user.name),
+						"delete": _has_doctype_permission(workspace_item, "delete", user.name),
+						"submit": _has_doctype_permission(workspace_item, "submit", user.name),
+						"cancel": _has_doctype_permission(workspace_item, "cancel", user.name),
+						"amend": _has_doctype_permission(workspace_item, "amend", user.name),
 					}
 				)
 
