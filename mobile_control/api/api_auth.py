@@ -47,14 +47,17 @@ def get_mobile_app_status() -> dict[str, Any]:
 	return {
 		"enabled": payload["enabled"],
 		"package_name": payload["package_name"],
-		"app_title": payload["app_title"],
 		"version": payload["version"],
+		"maintenance_mode": payload["maintenance_mode"],
+		"maintenance_message": payload["maintenance_message"],
 	}
 
 
 # nosemgrep frappe-semgrep-rules.rules.security.guest-whitelisted-method
 @frappe.whitelist(allow_guest=True, methods=["POST"])
-# @rate_limit(limit=get_mobile_login_ratelimit, seconds=60 * 60) # comment out for now to avoid rate limiting while testing
+@rate_limit(
+	limit=get_mobile_login_ratelimit, seconds=60 * 60
+)  # comment out for now to avoid rate limiting while testing
 def login(username: str | None = None, password: str | None = None) -> None:
 	"""Mobile app login handler."""
 	try:
@@ -113,7 +116,9 @@ def _validate_mobile_otp_prerequisites() -> None:
 
 # nosemgrep frappe-semgrep-rules.rules.security.guest-whitelisted-method
 @frappe.whitelist(allow_guest=True, methods=["POST"])
-# @rate_limit(key="mobile_no", limit=get_mobile_otp_ratelimit, seconds=60 * 10) # comment out for now to avoid rate limiting while testing
+@rate_limit(
+	key="mobile_no", limit=get_mobile_otp_ratelimit, seconds=60 * 10
+)  # comment out for now to avoid rate limiting while testing
 def send_mobile_otp(mobile_no: str) -> dict[str, str]:
 	"""Send mobile OTP for authentication."""
 	try:
@@ -139,7 +144,9 @@ def send_mobile_otp(mobile_no: str) -> dict[str, str]:
 
 # nosemgrep frappe-semgrep-rules.rules.security.guest-whitelisted-method
 @frappe.whitelist(allow_guest=True, methods=["POST"])
-# @rate_limit(key="tmp_id", limit=get_mobile_otp_ratelimit, seconds=60 * 10) # comment out for now to avoid rate limiting while testing
+@rate_limit(
+	key="tmp_id", limit=get_mobile_otp_ratelimit, seconds=60 * 10
+)  # comment out for now to avoid rate limiting while testing
 def verify_mobile_otp(tmp_id: str, otp: str) -> None:
 	"""Verify OTP and complete login."""
 	try:
@@ -177,7 +184,9 @@ def verify_mobile_otp(tmp_id: str, otp: str) -> None:
 
 # nosemgrep frappe-semgrep-rules.rules.security.guest-whitelisted-method
 @frappe.whitelist(allow_guest=True, methods=["POST"])
-# @rate_limit(key="refresh_token", limit=get_mobile_login_ratelimit, seconds=60 * 60) # comment out for now to avoid rate limiting while testing
+@rate_limit(
+	key="refresh_token", limit=get_mobile_login_ratelimit, seconds=60 * 60
+)  # comment out for now to avoid rate limiting while testing
 def refresh_token(refresh_token: str) -> dict[str, str]:
 	"""Refresh access token using refresh token."""
 	try:
@@ -188,11 +197,14 @@ def refresh_token(refresh_token: str) -> dict[str, str]:
 		access_token = generate_auth_token(user_doc)
 		new_refresh_token = rotate_refresh_token(token_doc, user_doc)
 
+		mobile_config = get_mobile_configuration_payload().get("configuration", [])
+
 		return build_auth_response(
 			user_doc,
 			access_token,
 			refresh_token=new_refresh_token,
 			message=_("Token refreshed"),
+			mobile_config=mobile_config,
 		)
 	except frappe.AuthenticationError:
 		frappe.throw(_("Invalid or expired refresh token"))

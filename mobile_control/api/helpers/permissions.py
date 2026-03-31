@@ -16,20 +16,22 @@ def get_user_permissions(user: Any) -> dict[str, Any]:
 		permissions_list: list[dict[str, Any]] = []
 
 		mobile_config = get_mobile_configuration_payload().get("configuration", [])
-		mobile_doctypes = [row.get("mobile_doctype") for row in mobile_config if row.get("mobile_doctype")]
+		mobile_workspace_items = [
+			row.get("mobile_workspace_item") for row in mobile_config if row.get("mobile_workspace_item")
+		]
 
-		for doctype in mobile_doctypes:
-			if doctype:
+		for workspace_item in mobile_workspace_items:
+			if workspace_item:
 				permissions_list.append(
 					{
-						"doctype": doctype,
-						"read": frappe.has_permission(doctype, "read", user=user.name),
-						"write": frappe.has_permission(doctype, "write", user=user.name),
-						"create": frappe.has_permission(doctype, "create", user=user.name),
-						"delete": frappe.has_permission(doctype, "delete", user=user.name),
-						"submit": frappe.has_permission(doctype, "submit", user=user.name),
-						"cancel": frappe.has_permission(doctype, "cancel", user=user.name),
-						"amend": frappe.has_permission(doctype, "amend", user=user.name),
+						"doctype": workspace_item,
+						"read": frappe.has_permission(workspace_item, "read", user=user.name),
+						"write": frappe.has_permission(workspace_item, "write", user=user.name),
+						"create": frappe.has_permission(workspace_item, "create", user=user.name),
+						"delete": frappe.has_permission(workspace_item, "delete", user=user.name),
+						"submit": frappe.has_permission(workspace_item, "submit", user=user.name),
+						"cancel": frappe.has_permission(workspace_item, "cancel", user=user.name),
+						"amend": frappe.has_permission(workspace_item, "amend", user=user.name),
 					}
 				)
 

@@ -46,7 +46,7 @@ Login, `mobile_auth.verify_login_otp`, and `mobile_auth.refresh_token` return a 
   "refresh_token": "...",
   "mobile_form_names": [
     {
-      "mobile_doctype": "Mobile Refresh Token",
+      "mobile_workspace_item": "Mobile Refresh Token",
       "group_name": "",
       "doctype_meta_modifed_at": "2026-02-14 14:40:49.962439",
       "doctype_icon": ""
