@@ -48,6 +48,17 @@ def build_auth_response(
 	return response
 
 
+def build_otp_response(tmp_id: str, mobile_no: str) -> dict[str, Any]:
+	"""Build OTP response with tmp_id and mobile_no."""
+	response = {
+		"message": _("OTP sent successfully"),
+		"tmp_id": tmp_id,
+		"mobile_no": mobile_no,
+		"prompt": _("Enter verification code sent to {0}").format(mobile_no, "******"),
+	}
+	return response
+
+
 def get_request_metadata() -> tuple[str | None, str | None]:
 	"""Get device_id and user_agent from request."""
 	device_id = frappe.form_dict.get("device_id")
