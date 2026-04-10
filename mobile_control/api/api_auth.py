@@ -2,6 +2,7 @@
 
 """Mobile authentication API endpoints."""
 
+import re
 from typing import Any
 
 import frappe
@@ -21,6 +22,13 @@ from .helpers.response_builder import build_auth_response
 from .helpers.response_builder import build_otp_response
 from .helpers.response_builder import clear_login_response
 from .helpers.response_builder import get_request_metadata
+from .helpers.social_login import DEFAULT_SCOPE
+from .helpers.social_login import build_authorize_url
+from .helpers.social_login import discover_social_login_providers
+from .helpers.social_login import get_provider_authorize_endpoint
+from .helpers.social_login import get_provider_row
+from .helpers.social_login import normalize_provider_id
+from .helpers.social_login import validate_redirect_uri
 from .helpers.user_auth import authenticate_user
 from .helpers.user_auth import authenticate_with_otp
 from .helpers.user_auth import ensure_api_credentials
@@ -52,6 +60,91 @@ def get_mobile_app_status() -> dict[str, Any]:
 		"maintenance_mode": payload["maintenance_mode"],
 		"maintenance_message": payload["maintenance_message"],
 	}
+
+
+# nosemgrep frappe-semgrep-rules.rules.security.guest-whitelisted-method
+@frappe.whitelist(allow_guest=True, methods=["GET", "POST"])
+def get_social_login_providers() -> dict[str, list[dict[str, str | None]]]:
+	"""Return enabled social providers from Social Login Key."""
+	return {"providers": discover_social_login_providers()}
+
+
+# nosemgrep frappe-semgrep-rules.rules.security.guest-whitelisted-method
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@rate_limit(key="provider", limit=get_mobile_login_ratelimit, seconds=60 * 10)
+def get_social_authorize_url(
+	provider: str | None = None,
+	client_id: str | None = None,
+	redirect_uri: str | None = None,
+	scope: str | None = None,
+	state: str | None = None,
+	code_challenge: str | None = None,
+	code_challenge_method: str | None = None,
+) -> dict[str, str]:
+	"""Build provider-direct OAuth authorize URL for PKCE login."""
+	provider_value = _require_param("provider", provider)
+	client_id_value = _require_param("client_id", client_id)
+	redirect_uri_value = _require_param("redirect_uri", redirect_uri)
+	state_value = _require_param("state", state)
+	code_challenge_value = _require_param("code_challenge", code_challenge)
+	code_challenge_method_value = _require_param("code_challenge_method", code_challenge_method)
+
+	if code_challenge_method_value != "S256":
+		frappe.throw(_("code_challenge_method must be S256"), frappe.ValidationError)
+
+	_validate_oauth_request_params(
+		client_id=client_id_value,
+		scope=(scope or DEFAULT_SCOPE).strip() or DEFAULT_SCOPE,
+		state=state_value,
+		code_challenge=code_challenge_value,
+	)
+	validate_redirect_uri(redirect_uri_value)
+
+	provider_id = normalize_provider_id(provider_value)
+	provider_row = get_provider_row(provider_id)
+	if not provider_row:
+		frappe.throw(_("Invalid or disabled provider: {0}").format(provider_value), frappe.ValidationError)
+
+	authorize_endpoint = get_provider_authorize_endpoint(provider_row, provider_id)
+	authorize_url = build_authorize_url(
+		authorize_endpoint,
+		{
+			"client_id": client_id_value,
+			"redirect_uri": redirect_uri_value,
+			"response_type": "code",
+			"scope": (scope or DEFAULT_SCOPE).strip() or DEFAULT_SCOPE,
+			"state": state_value,
+			"code_challenge": code_challenge_value,
+			"code_challenge_method": code_challenge_method_value,
+		},
+	)
+	return {"authorize_url": authorize_url}
+
+
+def _require_param(name: str, value: str | None) -> str:
+	"""Validate required request parameters."""
+	text = (value or "").strip()
+	if not text:
+		frappe.throw(_("Missing required parameter: {0}").format(name), frappe.ValidationError)
+	return text
+
+
+def _validate_oauth_request_params(client_id: str, scope: str, state: str, code_challenge: str) -> None:
+	"""Validate OAuth parameter shape and lengths for abuse resistance."""
+	if len(client_id) > 512:
+		frappe.throw(_("client_id exceeds maximum length"), frappe.ValidationError)
+	if len(scope) > 512:
+		frappe.throw(_("scope exceeds maximum length"), frappe.ValidationError)
+	if len(state) > 512:
+		frappe.throw(_("state exceeds maximum length"), frappe.ValidationError)
+	if len(code_challenge) < 43 or len(code_challenge) > 128:
+		frappe.throw(_("code_challenge must be between 43 and 128 characters"), frappe.ValidationError)
+
+	if not re.fullmatch(r"[A-Za-z0-9:_./\- ]{1,512}", scope):
+		frappe.throw(_("scope contains invalid characters"), frappe.ValidationError)
+
+	if not re.fullmatch(r"[A-Za-z0-9\-_]{43,128}", code_challenge):
+		frappe.throw(_("code_challenge contains invalid characters"), frappe.ValidationError)
 
 
 # nosemgrep frappe-semgrep-rules.rules.security.guest-whitelisted-method

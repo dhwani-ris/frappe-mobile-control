@@ -183,6 +183,8 @@ override_whitelisted_methods = {
 	"mobile_auth.configuration": "mobile_control.api.api_auth.get_mobile_configuration",
 	"mobile_auth.permissions": "mobile_control.api.api_auth.get_user_permissions",
 	"mobile_auth.get_translations": "mobile_control.api.api_auth.get_translations",
+	"mobile_auth.get_social_login_providers": "mobile_control.api.api_auth.get_social_login_providers",
+	"mobile_auth.get_social_authorize_url": "mobile_control.api.api_auth.get_social_authorize_url",
 }
 #
 # each overriding function accepts a `data` argument;
