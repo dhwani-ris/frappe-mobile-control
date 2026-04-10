@@ -11,6 +11,7 @@ from urllib.parse import urlparse
 from urllib.parse import urlunparse
 
 import frappe
+from frappe import _
 
 SOCIAL_LOGIN_KEY_DOCTYPE = "Social Login Key"
 DEFAULT_SCOPE = "openid all"
@@ -51,7 +52,9 @@ def validate_redirect_uri(redirect_uri: str) -> None:
 	"""Validate redirect URI against allowlisted values."""
 	if redirect_uri not in get_allowed_redirect_uris():
 		frappe.throw(
-			"Invalid redirect_uri. Allowed values: " + ", ".join(sorted(get_allowed_redirect_uris())),
+			_("Invalid redirect_uri. Allowed values: {0}").format(
+				", ".join(sorted(get_allowed_redirect_uris()))
+			),
 			frappe.ValidationError,
 		)
 
@@ -114,8 +117,9 @@ def get_provider_authorize_endpoint(provider_row: dict, provider_id: str) -> str
 		return default_endpoint
 
 	frappe.throw(
-		f"Unable to resolve authorize URL for provider '{provider_id}'. "
-		"Configure authorize_url on Social Login Key.",
+		_(
+			"Unable to resolve authorize URL for provider '{0}'. Configure authorize_url on Social Login Key."
+		).format(provider_id),
 		frappe.ValidationError,
 	)
 	return ""
@@ -134,17 +138,17 @@ def validate_authorize_endpoint(authorize_endpoint: str) -> None:
 	"""Reject unsafe or malformed authorize endpoints."""
 	parsed = urlparse((authorize_endpoint or "").strip())
 	if not parsed.scheme or not parsed.netloc:
-		frappe.throw("Invalid provider authorize endpoint URL", frappe.ValidationError)
+		frappe.throw(_("Invalid provider authorize endpoint URL"), frappe.ValidationError)
 
 	if parsed.scheme.lower() != "https":
-		frappe.throw("Provider authorize endpoint must use HTTPS", frappe.ValidationError)
+		frappe.throw(_("Provider authorize endpoint must use HTTPS"), frappe.ValidationError)
 
 	hostname = (parsed.hostname or "").strip().lower()
 	if not hostname:
-		frappe.throw("Invalid provider authorize endpoint host", frappe.ValidationError)
+		frappe.throw(_("Invalid provider authorize endpoint host"), frappe.ValidationError)
 
 	if hostname in {"localhost"} or hostname.endswith(".local"):
-		frappe.throw("Provider authorize endpoint host is not allowed", frappe.ValidationError)
+		frappe.throw(_("Provider authorize endpoint host is not allowed"), frappe.ValidationError)
 
 	try:
 		ip = ipaddress.ip_address(hostname)
@@ -159,7 +163,7 @@ def validate_authorize_endpoint(authorize_endpoint: str) -> None:
 		or ip.is_reserved
 		or ip.is_unspecified
 	):
-		frappe.throw("Provider authorize endpoint IP is not allowed", frappe.ValidationError)
+		frappe.throw(_("Provider authorize endpoint IP is not allowed"), frappe.ValidationError)
 
 
 def _get_social_login_key_rows() -> list[dict]:

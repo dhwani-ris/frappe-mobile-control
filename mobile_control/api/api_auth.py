@@ -89,7 +89,7 @@ def get_social_authorize_url(
 	code_challenge_method_value = _require_param("code_challenge_method", code_challenge_method)
 
 	if code_challenge_method_value != "S256":
-		frappe.throw("code_challenge_method must be S256", frappe.ValidationError)
+		frappe.throw(_("code_challenge_method must be S256"), frappe.ValidationError)
 
 	_validate_oauth_request_params(
 		client_id=client_id_value,
@@ -102,7 +102,7 @@ def get_social_authorize_url(
 	provider_id = normalize_provider_id(provider_value)
 	provider_row = get_provider_row(provider_id)
 	if not provider_row:
-		frappe.throw(f"Invalid or disabled provider: {provider_value}", frappe.ValidationError)
+		frappe.throw(_("Invalid or disabled provider: {0}").format(provider_value), frappe.ValidationError)
 
 	authorize_endpoint = get_provider_authorize_endpoint(provider_row, provider_id)
 	authorize_url = build_authorize_url(
@@ -124,26 +124,26 @@ def _require_param(name: str, value: str | None) -> str:
 	"""Validate required request parameters."""
 	text = (value or "").strip()
 	if not text:
-		frappe.throw(f"Missing required parameter: {name}", frappe.ValidationError)
+		frappe.throw(_("Missing required parameter: {0}").format(name), frappe.ValidationError)
 	return text
 
 
 def _validate_oauth_request_params(client_id: str, scope: str, state: str, code_challenge: str) -> None:
 	"""Validate OAuth parameter shape and lengths for abuse resistance."""
 	if len(client_id) > 512:
-		frappe.throw("client_id exceeds maximum length", frappe.ValidationError)
+		frappe.throw(_("client_id exceeds maximum length"), frappe.ValidationError)
 	if len(scope) > 512:
-		frappe.throw("scope exceeds maximum length", frappe.ValidationError)
+		frappe.throw(_("scope exceeds maximum length"), frappe.ValidationError)
 	if len(state) > 512:
-		frappe.throw("state exceeds maximum length", frappe.ValidationError)
+		frappe.throw(_("state exceeds maximum length"), frappe.ValidationError)
 	if len(code_challenge) < 43 or len(code_challenge) > 128:
-		frappe.throw("code_challenge must be between 43 and 128 characters", frappe.ValidationError)
+		frappe.throw(_("code_challenge must be between 43 and 128 characters"), frappe.ValidationError)
 
 	if not re.fullmatch(r"[A-Za-z0-9:_./\- ]{1,512}", scope):
-		frappe.throw("scope contains invalid characters", frappe.ValidationError)
+		frappe.throw(_("scope contains invalid characters"), frappe.ValidationError)
 
 	if not re.fullmatch(r"[A-Za-z0-9\-_]{43,128}", code_challenge):
-		frappe.throw("code_challenge contains invalid characters", frappe.ValidationError)
+		frappe.throw(_("code_challenge contains invalid characters"), frappe.ValidationError)
 
 
 # nosemgrep frappe-semgrep-rules.rules.security.guest-whitelisted-method
