@@ -19,6 +19,7 @@ from .helpers.refresh_token import get_valid_refresh_token_doc
 from .helpers.refresh_token import revoke_refresh_tokens_for_user
 from .helpers.refresh_token import rotate_refresh_token
 from .helpers.response_builder import build_auth_response
+from .helpers.response_builder import build_otp_response
 from .helpers.response_builder import clear_login_response
 from .helpers.response_builder import get_request_metadata
 from .helpers.social_login import DEFAULT_SCOPE
@@ -219,12 +220,12 @@ def send_mobile_otp(mobile_no: str) -> dict[str, str]:
 		validate_phone_number(mobile_no, throw=True)
 		user_data = find_user_by_mobile(mobile_no)
 		result = send_mobile_login_otp(user_data.name, mobile_no)
-		return {
-			"message": _("OTP sent successfully"),
-			"tmp_id": result.get("tmp_id"),
-			"mobile_no": result.get("mobile_no"),
-			"prompt": _("Enter verification code sent to {0}").format(result.get("mobile_no", "******")),
-		}
+		frappe.local.response.update(
+			build_otp_response(
+				result.get("tmp_id"),
+				result.get("mobile_no"),
+			)
+		)
 
 	except frappe.AuthenticationError:
 		frappe.throw(_("Authentication failed"))
