@@ -26,11 +26,78 @@ Endpoints:
 - `mobile_auth.refresh_token` - Refresh access token using refresh token.
 - `mobile_auth.permissions` - Get current user permissions (requires authentication).
 - `mobile_auth.get_translations` - Get translation dictionary for one or more languages (requires authentication). By default returns DB translations only; use `all=1` for full (apps + DB). Use `lang=hi,en` for multiple languages.
+- `mobile_auth.get_social_login_providers` - Discover enabled social providers from `Social Login Key` (guest).
+- `mobile_auth.get_social_authorize_url` - Build provider-direct OAuth authorize URL for one-tap social login (guest).
 
 Response tokens:
 
 - `access_token` expires in 24 hours.
 - `refresh_token` expires in 30 days and is rotated on every refresh.
+
+#### Social login APIs (one-tap)
+
+These APIs are designed for mobile SDK OAuth (PKCE) login and avoid the extra
+provider selection click on Frappe login page.
+
+- Providers are auto-discovered from Frappe `Social Login Key`.
+- No extra provider config is required in `mobile_control`.
+- Sensitive data such as `client_secret` is never returned.
+
+Required mobile callback URI:
+
+- `frappemobilesdk://oauth/callback`
+
+Provider discovery:
+
+```
+GET /api/method/mobile_auth.get_social_login_providers
+```
+
+Example response:
+
+```json
+{
+  "providers": [
+    { "id": "google", "label": "Google", "icon_url": "https://..." },
+    { "id": "microsoft", "label": "Microsoft", "icon_url": null }
+  ]
+}
+```
+
+Provider-direct authorize URL:
+
+```
+POST /api/v2/method/mobile_auth.get_social_authorize_url
+```
+
+Body:
+
+```json
+{
+  "provider": "google",
+  "client_id": "mobile-client-id",
+  "redirect_uri": "frappemobilesdk://oauth/callback",
+  "scope": "openid all",
+  "state": "random-state",
+  "code_challenge": "pkce-code-challenge",
+  "code_challenge_method": "S256"
+}
+```
+
+Example response:
+
+```json
+{
+  "authorize_url": "https://accounts.google.com/o/oauth2/v2/auth?client_id=mobile-client-id&redirect_uri=frappemobilesdk%3A%2F%2Foauth%2Fcallback&response_type=code&scope=openid+all&state=random-state&code_challenge=pkce-code-challenge&code_challenge_method=S256"
+}
+```
+
+Troubleshooting:
+
+- Provider not showing: verify `Social Login Key` exists and social login is enabled for that key.
+- Invalid provider error: ensure `provider` matches discovered provider `id` (`google`, `microsoft`, etc).
+- Redirect URI mismatch: ensure app sends `frappemobilesdk://oauth/callback` (or add allowlisted URIs in site config).
+- Provider URL not resolved: set provider authorize URL in `Social Login Key` if using a custom provider.
 
 #### Auth response shape (login, verify OTP, refresh token)
 
