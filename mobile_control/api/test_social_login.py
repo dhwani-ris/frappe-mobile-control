@@ -36,33 +36,39 @@ class TestSocialLogin(UnitTestCase):
 		with (
 			patch("mobile_control.api.helpers.social_login.get_provider_row", return_value=row),
 			patch(
-				"mobile_control.api.helpers.social_login.get_provider_authorize_endpoint",
-				return_value="https://accounts.google.com/o/oauth2/v2/auth",
-			),
-			patch(
 				"mobile_control.api.helpers.social_login.get_allowed_redirect_uris",
 				return_value={"frappemobilesdk://oauth/callback"},
 			),
+			patch(
+				"mobile_control.api.api_auth.get_oauth2_authorize_url",
+				return_value="https://accounts.google.com/o/oauth2/v2/auth?client_id=social",
+			) as oauth_social,
 		):
 			result = api_auth.get_social_authorize_url(
 				provider="google",
 				client_id="abc123",
 				redirect_uri="frappemobilesdk://oauth/callback",
 				state="state-1",
-				code_challenge="challenge",
+				code_challenge="a" * 43,
 				code_challenge_method="S256",
 			)
 
 		parsed = urlparse(result["authorize_url"])
 		query = parse_qs(parsed.query)
 		assert parsed.scheme == "https"
-		assert query["client_id"] == ["abc123"]
-		assert query["redirect_uri"] == ["frappemobilesdk://oauth/callback"]
-		assert query["response_type"] == ["code"]
-		assert query["scope"] == ["openid all"]
-		assert query["state"] == ["state-1"]
-		assert query["code_challenge"] == ["challenge"]
-		assert query["code_challenge_method"] == ["S256"]
+		assert parsed.netloc == "accounts.google.com"
+		assert query["client_id"] == ["social"]
+		oauth_social.assert_called_once()
+		called_provider, called_redirect = oauth_social.call_args.args
+		assert called_provider == "Google"
+		redirect_query = parse_qs(urlparse(called_redirect).query)
+		assert redirect_query["client_id"] == ["abc123"]
+		assert redirect_query["redirect_uri"] == ["frappemobilesdk://oauth/callback"]
+		assert redirect_query["response_type"] == ["code"]
+		assert redirect_query["scope"] == ["openid all"]
+		assert redirect_query["state"] == ["state-1"]
+		assert redirect_query["code_challenge"] == ["a" * 43]
+		assert redirect_query["code_challenge_method"] == ["S256"]
 
 	def test_invalid_provider(self) -> None:
 		with (
@@ -101,17 +107,17 @@ class TestSocialLogin(UnitTestCase):
 			providers = social_login.discover_social_login_providers()
 		assert providers == []
 
-	def test_rejects_non_https_authorize_endpoint(self) -> None:
+	def test_propagates_social_provider_validation_error(self) -> None:
 		row = {"name": "Google", "provider_name": "Google", "enable_social_login": 1}
 		with (
 			patch("mobile_control.api.helpers.social_login.get_provider_row", return_value=row),
 			patch(
-				"mobile_control.api.helpers.social_login.get_provider_authorize_endpoint",
-				return_value="http://accounts.google.com/o/oauth2/v2/auth",
-			),
-			patch(
 				"mobile_control.api.helpers.social_login.get_allowed_redirect_uris",
 				return_value={"frappemobilesdk://oauth/callback"},
+			),
+			patch(
+				"mobile_control.api.api_auth.get_oauth2_authorize_url",
+				side_effect=frappe.ValidationError,
 			),
 		):
 			with self.assertRaises(frappe.ValidationError):
