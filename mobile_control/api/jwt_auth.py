@@ -99,6 +99,11 @@ def _extract_bearer_token() -> str | None:
 	return auth_header.split(" ", 1)[1].strip()
 
 
+def _looks_like_mobile_control_token(token: str) -> bool:
+	"""Best-effort check for Fernet token issued by mobile_control."""
+	return bool(token) and token.startswith("gAAAA")
+
+
 def _convert_to_frappe_auth(api_key: str, api_secret: str) -> None:
 	"""Convert API credentials to Frappe's token format"""
 	new_headers = dict(frappe.request.headers)
@@ -114,6 +119,10 @@ def token_auth_middleware() -> None:
 		encrypted_token = _extract_bearer_token()
 		if not encrypted_token:
 			return  # No token, let Frappe handle as usual
+		# OAuth/social login uses Frappe OAuth Bearer tokens. Leave them unchanged.
+		# Only decode tokens that look like mobile_control Fernet payloads.
+		if not _looks_like_mobile_control_token(encrypted_token):
+			return
 
 		api_key, api_secret = decode_api_credentials(encrypted_token)
 		_convert_to_frappe_auth(api_key, api_secret)
