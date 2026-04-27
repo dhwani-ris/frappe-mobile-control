@@ -45,8 +45,14 @@ from .mobile_otp import send_mobile_login_otp
 # nosemgrep frappe-semgrep-rules.rules.security.guest-whitelisted-method
 @frappe.whitelist(allow_guest=True, methods=["GET"])
 def get_mobile_configuration() -> list[dict[str, Any]]:
-	"""Guest API to fetch mobile configuration list."""
-	return get_mobile_configuration_payload().get("configuration", [])
+	"""Fetch mobile configuration list filtered to doctypes the user can read."""
+	config = get_mobile_configuration_payload().get("configuration", [])
+	if frappe.session.user == "Guest":
+		return config
+	return [
+		item for item in config
+		if frappe.has_permission(item["mobile_workspace_item"], "read", throw=False)
+	]
 
 
 # nosemgrep frappe-semgrep-rules.rules.security.guest-whitelisted-method
