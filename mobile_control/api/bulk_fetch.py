@@ -35,7 +35,6 @@ from typing import Any
 import frappe
 from frappe import _
 
-
 # Hard cap to bound server work / response payload. The SDK chunks
 # larger lists client-side; keep this in sync with the constant in
 # `doctype_service.dart`.
@@ -103,9 +102,7 @@ def get_docs_with_children(doctype: str, names: Any) -> list[dict[str, Any]]:
 
 	if len(parsed_names) > MAX_BATCH:
 		frappe.throw(
-			_("Batch size {0} exceeds limit of {1}").format(
-				len(parsed_names), MAX_BATCH
-			),
+			_("Batch size {0} exceeds limit of {1}").format(len(parsed_names), MAX_BATCH),
 			frappe.ValidationError,
 		)
 
@@ -116,8 +113,7 @@ def get_docs_with_children(doctype: str, names: Any) -> list[dict[str, Any]]:
 	if meta.istable:
 		frappe.throw(
 			_(
-				"`{0}` is a child doctype; fetch its parent and read "
-				"child rows from the returned document."
+				"`{0}` is a child doctype; fetch its parent and read child rows from the returned document."
 			).format(doctype),
 			frappe.PermissionError,
 		)
@@ -126,9 +122,7 @@ def get_docs_with_children(doctype: str, names: Any) -> list[dict[str, Any]]:
 	# also surfaces non-existent doctypes as PermissionError (Frappe
 	# raises during `has_permission` lookup).
 	if not frappe.has_permission(doctype, "read"):
-		raise frappe.PermissionError(
-			_("Not permitted to read {0}").format(doctype)
-		)
+		raise frappe.PermissionError(_("Not permitted to read {0}").format(doctype))
 
 	out: list[dict[str, Any]] = []
 	for name in parsed_names:

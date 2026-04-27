@@ -50,8 +50,7 @@ def get_mobile_configuration() -> list[dict[str, Any]]:
 	if frappe.session.user == "Guest":
 		return config
 	return [
-		item for item in config
-		if frappe.has_permission(item["mobile_workspace_item"], "read", throw=False)
+		item for item in config if frappe.has_permission(item["mobile_workspace_item"], "read", throw=False)
 	]
 
 
