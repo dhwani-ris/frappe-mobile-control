@@ -145,6 +145,15 @@ app_license = "mit"
 # 	}
 # }
 doc_events = {
+	# Mobile attachment relink — runs on every doc save site-wide; fast-
+	# exits in O(1) when the doc has no `mobile_uuid` (not a mobile-sync
+	# doctype). Walks the parent + child tables and rewires SDK-uploaded
+	# File rows (uploaded with dt=<doctype>, dn=NULL) to point at their
+	# real (doctype, name) once the parent INSERT/UPDATE commits.
+	"*": {
+		"on_update": "mobile_control.attachment_relink.relink_mobile_files",
+		"on_update_after_submit": "mobile_control.attachment_relink.relink_mobile_files",
+	},
 	"DocType": {
 		"on_update": "mobile_control.mobile_control.doctype.mobile_configuration.mobile_configuration.update_doctype_meta_modified",
 	},
