@@ -202,7 +202,9 @@ def login(username: str | None = None, password: str | None = None) -> None:
 		frappe.local.login_manager.logout()
 		clear_login_response()
 
-		mobile_config = get_mobile_configuration_payload().get("configuration", [])
+		payload = get_mobile_configuration_payload()
+		mobile_config = payload.get("configuration", [])
+		offline_enabled = bool(payload.get("offline_enabled", False))
 
 		frappe.local.response.update(
 			build_auth_response(
@@ -210,6 +212,7 @@ def login(username: str | None = None, password: str | None = None) -> None:
 				access_token,
 				refresh_token=refresh_token,
 				mobile_config=mobile_config,
+				offline_enabled=offline_enabled,
 			)
 		)
 
@@ -293,7 +296,9 @@ def verify_mobile_otp(tmp_id: str, otp: str) -> None:
 
 		clear_login_response()
 
-		mobile_config = get_mobile_configuration_payload().get("configuration", [])
+		payload = get_mobile_configuration_payload()
+		mobile_config = payload.get("configuration", [])
+		offline_enabled = bool(payload.get("offline_enabled", False))
 
 		frappe.local.response.update(
 			build_auth_response(
@@ -301,6 +306,7 @@ def verify_mobile_otp(tmp_id: str, otp: str) -> None:
 				access_token,
 				refresh_token=refresh_token,
 				mobile_config=mobile_config,
+				offline_enabled=offline_enabled,
 			)
 		)
 
@@ -328,7 +334,9 @@ def refresh_token(refresh_token: str) -> dict[str, str]:
 		access_token = generate_auth_token(user_doc)
 		new_refresh_token = rotate_refresh_token(token_doc, user_doc)
 
-		mobile_config = get_mobile_configuration_payload().get("configuration", [])
+		payload = get_mobile_configuration_payload()
+		mobile_config = payload.get("configuration", [])
+		offline_enabled = bool(payload.get("offline_enabled", False))
 
 		return build_auth_response(
 			user_doc,
@@ -336,6 +344,7 @@ def refresh_token(refresh_token: str) -> dict[str, str]:
 			refresh_token=new_refresh_token,
 			message=_("Token refreshed"),
 			mobile_config=mobile_config,
+			offline_enabled=offline_enabled,
 		)
 	except frappe.AuthenticationError:
 		frappe.throw(_("Invalid or expired refresh token"))
