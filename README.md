@@ -117,6 +117,7 @@ Login, `mobile_auth.verify_login_otp`, and `mobile_auth.refresh_token` return a 
   "language": "en",
   "access_token": "...",
   "refresh_token": "...",
+  "offline_enabled": false,
   "mobile_form_names": [
     {
       "mobile_workspace_item": "Mobile Refresh Token",
@@ -142,6 +143,7 @@ Login, `mobile_auth.verify_login_otp`, and `mobile_auth.refresh_token` return a 
 ```
 
 - `language` is the user's language (default `"en"` if blank).
+- `offline_enabled` is the value of the `Mobile Configuration.offline_enabled` Check field. The mobile SDK uses this to decide whether to run as an offline-first client or a thin online client. Default `false`. Only emitted when the parent `enabled` flag is on. See the SDK's `doc/OFFLINE_MODE_TOGGLE.md` for the full client-side contract.
 - `roles` is an array of role names.
 - `permissions` is an array of objects; each has `doctype` and the flags `read`, `write`, `create`, `delete`, `submit`, `cancel`, `amend`.
 
