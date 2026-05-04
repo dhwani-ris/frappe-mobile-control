@@ -369,6 +369,32 @@ def get_user_permissions() -> dict[str, Any]:
 
 
 @frappe.whitelist(methods=["GET"])
+def me() -> dict[str, Any]:
+	"""Return current user identity, roles, permissions, locale, and mobile form list.
+
+	Used by the SDK after OAuth or API-key login (where no login response is
+	available) to populate roles, permissions, locale, and the session user.
+	"""
+	if frappe.session.user == "Guest":
+		frappe.throw(_("Authentication required"), frappe.AuthenticationError)
+	user = frappe.get_doc("User", frappe.session.user)
+	payload = get_mobile_configuration_payload()
+	perms = get_user_permissions_data(user)
+	user_lang = (getattr(user, "language", None) or "").strip() or "en"
+	return {
+		"name": user.name,
+		"user": user.name,
+		"full_name": user.full_name or "",
+		"user_image": user.user_image or "",
+		"language": user_lang,
+		"roles": perms.get("roles", []),
+		"permissions": perms.get("permissions", []),
+		"mobile_form_names": payload.get("configuration", []),
+		"offline_enabled": bool(payload.get("offline_enabled", False)),
+	}
+
+
+@frappe.whitelist(methods=["GET"])
 def get_translations(lang: str | None = None, all: str | None = None) -> dict[str, Any]:
 	"""Return translation dictionary for one or more languages. Authenticated users only.
 
