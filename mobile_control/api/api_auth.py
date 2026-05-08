@@ -45,8 +45,13 @@ from .mobile_otp import send_mobile_login_otp
 # nosemgrep frappe-semgrep-rules.rules.security.guest-whitelisted-method
 @frappe.whitelist(allow_guest=True, methods=["GET"])
 def get_mobile_configuration() -> list[dict[str, Any]]:
-	"""Guest API to fetch mobile configuration list."""
-	return get_mobile_configuration_payload().get("configuration", [])
+	"""Fetch mobile configuration list filtered to doctypes the user can read."""
+	config = get_mobile_configuration_payload().get("configuration", [])
+	if frappe.session.user == "Guest":
+		return config
+	return [
+		item for item in config if frappe.has_permission(item["mobile_workspace_item"], "read", throw=False)
+	]
 
 
 # nosemgrep frappe-semgrep-rules.rules.security.guest-whitelisted-method
@@ -197,7 +202,9 @@ def login(username: str | None = None, password: str | None = None) -> None:
 		frappe.local.login_manager.logout()
 		clear_login_response()
 
-		mobile_config = get_mobile_configuration_payload().get("configuration", [])
+		payload = get_mobile_configuration_payload()
+		mobile_config = payload.get("configuration", [])
+		offline_enabled = bool(payload.get("offline_enabled", False))
 
 		frappe.local.response.update(
 			build_auth_response(
@@ -205,6 +212,7 @@ def login(username: str | None = None, password: str | None = None) -> None:
 				access_token,
 				refresh_token=refresh_token,
 				mobile_config=mobile_config,
+				offline_enabled=offline_enabled,
 			)
 		)
 
@@ -288,7 +296,9 @@ def verify_mobile_otp(tmp_id: str, otp: str) -> None:
 
 		clear_login_response()
 
-		mobile_config = get_mobile_configuration_payload().get("configuration", [])
+		payload = get_mobile_configuration_payload()
+		mobile_config = payload.get("configuration", [])
+		offline_enabled = bool(payload.get("offline_enabled", False))
 
 		frappe.local.response.update(
 			build_auth_response(
@@ -296,6 +306,7 @@ def verify_mobile_otp(tmp_id: str, otp: str) -> None:
 				access_token,
 				refresh_token=refresh_token,
 				mobile_config=mobile_config,
+				offline_enabled=offline_enabled,
 			)
 		)
 
@@ -323,7 +334,9 @@ def refresh_token(refresh_token: str) -> dict[str, str]:
 		access_token = generate_auth_token(user_doc)
 		new_refresh_token = rotate_refresh_token(token_doc, user_doc)
 
-		mobile_config = get_mobile_configuration_payload().get("configuration", [])
+		payload = get_mobile_configuration_payload()
+		mobile_config = payload.get("configuration", [])
+		offline_enabled = bool(payload.get("offline_enabled", False))
 
 		return build_auth_response(
 			user_doc,
@@ -331,6 +344,7 @@ def refresh_token(refresh_token: str) -> dict[str, str]:
 			refresh_token=new_refresh_token,
 			message=_("Token refreshed"),
 			mobile_config=mobile_config,
+			offline_enabled=offline_enabled,
 		)
 	except frappe.AuthenticationError:
 		frappe.throw(_("Invalid or expired refresh token"))
@@ -352,6 +366,32 @@ def get_user_permissions() -> dict[str, Any]:
 	except Exception as e:
 		frappe.log_error(f"Error fetching user permissions: {e}")
 		frappe.throw(_("Failed to fetch permissions"))
+
+
+@frappe.whitelist(methods=["GET"])
+def me() -> dict[str, Any]:
+	"""Return current user identity, roles, permissions, locale, and mobile form list.
+
+	Used by the SDK after OAuth or API-key login (where no login response is
+	available) to populate roles, permissions, locale, and the session user.
+	"""
+	if frappe.session.user == "Guest":
+		frappe.throw(_("Authentication required"), frappe.AuthenticationError)
+	user = frappe.get_doc("User", frappe.session.user)
+	payload = get_mobile_configuration_payload()
+	perms = get_user_permissions_data(user)
+	user_lang = (getattr(user, "language", None) or "").strip() or "en"
+	return {
+		"name": user.name,
+		"user": user.name,
+		"full_name": user.full_name or "",
+		"user_image": user.user_image or "",
+		"language": user_lang,
+		"roles": perms.get("roles", []),
+		"permissions": perms.get("permissions", []),
+		"mobile_form_names": payload.get("configuration", []),
+		"offline_enabled": bool(payload.get("offline_enabled", False)),
+	}
 
 
 @frappe.whitelist(methods=["GET"])

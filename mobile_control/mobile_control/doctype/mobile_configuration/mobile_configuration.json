@@ -6,6 +6,7 @@
  "engine": "InnoDB",
  "field_order": [
   "enabled",
+  "offline_enabled",
   "app_details_section",
   "package_name",
   "column_break_pioi",
@@ -22,6 +23,13 @@
    "fieldname": "enabled",
    "fieldtype": "Check",
    "label": " Enabled"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.enabled",
+   "fieldname": "offline_enabled",
+   "fieldtype": "Check",
+   "label": "Offline Mode Enabled"
   },
   {
    "depends_on": "eval:doc.enabled",
