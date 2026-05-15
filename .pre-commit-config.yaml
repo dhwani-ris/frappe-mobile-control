@@ -1,6 +1,3 @@
-# Copy this to your project root as .pre-commit-config.yaml
-# IMPORTANT: First install the package: pip install frappe-pre-commit
-
 exclude: 'node_modules|.git'
 default_stages: [pre-commit]
 fail_fast: false
@@ -11,17 +8,14 @@ repos:
     rev: v5.0.0
     hooks:
       - id: trailing-whitespace
-        files: "frappe.*"
+        files: "mobile_control.*"
         exclude: ".*json$|.*txt$|.*csv|.*md|.*svg"
-      - id: no-commit-to-branch
-        args: ['--branch', 'develop']
       - id: check-merge-conflict
       - id: check-ast
       - id: check-json
       - id: check-toml
       - id: check-yaml
       - id: debug-statements
-        exclude: ^frappe/tests/classes/context_managers\.py$
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.8.1
@@ -29,15 +23,12 @@ repos:
       - id: ruff
         name: "Run ruff import sorter"
         args: ["--select=I", "--fix"]
-        exclude: ^\.github/helper/
 
       - id: ruff
         name: "Run ruff linter"
-        exclude: ^\.github/helper/
 
       - id: ruff-format
         name: "Run ruff formatter"
-        exclude: ^\.github/helper/
 
   - repo: https://github.com/pre-commit/mirrors-prettier
     rev: v2.7.1
@@ -47,13 +38,11 @@ repos:
         # Ignore any files that might contain jinja / bundles
         exclude: |
             (?x)^(
-                frappe/public/dist/.*|
+                mobile_control/public/dist/.*|
                 .*node_modules.*|
                 .*boilerplate.*|
-                frappe/www/website_script.js|
-                frappe/templates/includes/.*|
-                frappe/public/js/lib/.*|
-                frappe/website/doctype/website_theme/website_theme_template.scss
+                mobile_control/templates/includes/.*|
+                mobile_control/public/js/lib/.*
             )$
 
 
@@ -66,33 +55,13 @@ repos:
         # Ignore any files that might contain jinja / bundles
         exclude: |
             (?x)^(
-                frappe/public/dist/.*|
+                mobile_control/public/dist/.*|
                 cypress/.*|
                 .*node_modules.*|
                 .*boilerplate.*|
-                frappe/www/website_script.js|
-                frappe/templates/includes/.*|
-                frappe/public/js/lib/.*
+                mobile_control/templates/includes/.*|
+                mobile_control/public/js/lib/.*
             )$
-
-  # Frappe-specific coding standards
-  # The frappe-pre-commit package will be installed automatically
-  - repo: https://github.com/dhwani-ris/frappe-pre-commit
-    rev: v1.0.4
-    hooks:
-      - id: frappe-sql-security
-      - id: frappe-doctype-naming
-      - id: frappe-coding-standards
-
-# Alternative: Use all checks in one hook
-# - repo: https://github.com/dhwani-ris/frappe-pre-commit
-#   rev: v1.0.0
-#   hooks:
-#     - id: frappe-all-checks
-
-# Configuration for specific tools
-default_language_version:
-  python: python3
 
 ci:
     autoupdate_schedule: weekly
