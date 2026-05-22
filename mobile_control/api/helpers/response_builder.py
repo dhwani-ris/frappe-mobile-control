@@ -25,6 +25,7 @@ def build_auth_response(
 	mobile_config: list[dict[str, Any]] | None = None,
 	message: str | None = None,
 	include_permissions: bool = True,
+	offline_enabled: bool = False,
 ) -> dict[str, Any]:
 	"""Build authentication response with tokens and user data."""
 	user_lang = (
@@ -36,6 +37,7 @@ def build_auth_response(
 		"full_name": user.full_name,
 		"language": user_lang,
 		"access_token": access_token,
+		"offline_enabled": bool(offline_enabled),
 	}
 	if refresh_token:
 		response["refresh_token"] = refresh_token
