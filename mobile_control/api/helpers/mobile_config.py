@@ -24,9 +24,11 @@ def get_mobile_configuration_payload() -> dict[str, Any]:
 					}
 				)
 		enabled = bool(config.enabled)
+		offline_enabled = bool(getattr(config, "offline_enabled", 0)) if enabled else False
 		maintenance_mode = bool(config.maintenance_mode)
 		return {
 			"enabled": enabled,
+			"offline_enabled": offline_enabled,
 			"package_name": config.package_name if enabled else "",
 			"version": config.minimum_app_version if enabled else "",
 			"maintenance_mode": maintenance_mode,
@@ -37,6 +39,7 @@ def get_mobile_configuration_payload() -> dict[str, Any]:
 		frappe.log_error(f"Error fetching mobile configuration: {frappe.get_traceback()}")
 		return {
 			"enabled": False,
+			"offline_enabled": False,
 			"package_name": "",
 			"version": "",
 			"maintenance_mode": False,

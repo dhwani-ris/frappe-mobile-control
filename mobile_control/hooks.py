@@ -145,6 +145,15 @@ app_license = "mit"
 # 	}
 # }
 doc_events = {
+	# Mobile attachment relink — runs on every doc save site-wide; fast-
+	# exits in O(1) when the doc has no `mobile_uuid` (not a mobile-sync
+	# doctype). Walks the parent + child tables and rewires SDK-uploaded
+	# File rows (uploaded with dt=<doctype>, dn=NULL) to point at their
+	# real (doctype, name) once the parent INSERT/UPDATE commits.
+	"*": {
+		"on_update": "mobile_control.attachment_relink.relink_mobile_files",
+		"on_update_after_submit": "mobile_control.attachment_relink.relink_mobile_files",
+	},
 	"DocType": {
 		"on_update": "mobile_control.mobile_control.doctype.mobile_configuration.mobile_configuration.update_doctype_meta_modified",
 	},
@@ -182,9 +191,11 @@ override_whitelisted_methods = {
 	"mobile_auth.app_status": "mobile_control.api.api_auth.get_mobile_app_status",
 	"mobile_auth.configuration": "mobile_control.api.api_auth.get_mobile_configuration",
 	"mobile_auth.permissions": "mobile_control.api.api_auth.get_user_permissions",
+	"mobile_auth.me": "mobile_control.api.api_auth.me",
 	"mobile_auth.get_translations": "mobile_control.api.api_auth.get_translations",
 	"mobile_auth.get_social_login_providers": "mobile_control.api.api_auth.get_social_login_providers",
 	"mobile_auth.get_social_authorize_url": "mobile_control.api.api_auth.get_social_authorize_url",
+	"mobile_sync.get_docs_with_children": "mobile_control.api.bulk_fetch.get_docs_with_children",
 }
 #
 # each overriding function accepts a `data` argument;

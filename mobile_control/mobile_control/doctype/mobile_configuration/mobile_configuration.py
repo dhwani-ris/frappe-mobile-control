@@ -13,9 +13,26 @@ class MobileConfiguration(Document):
 
 
 def _ensure_mobile_uuid_fields(config: "MobileConfiguration") -> None:
-	doctypes = {row.mobile_workspace_item for row in (config.table_lwis or []) if row.mobile_workspace_item}
-	for doctype in doctypes:
+	# Cover both the configured top-level workspace doctypes and every
+	# child doctype reachable through their Table / Table MultiSelect
+	# fields, so the mobile SDK can round-trip child-row identity.
+	top_level = {row.mobile_workspace_item for row in (config.table_lwis or []) if row.mobile_workspace_item}
+	for doctype in top_level | _collect_child_doctypes(top_level):
 		_ensure_mobile_uuid_field(doctype)
+
+
+def _collect_child_doctypes(parent_doctypes: set[str]) -> set[str]:
+	"""Child doctype names referenced by any parent's Table / Table
+	MultiSelect fields. Read-only."""
+	children: set[str] = set()
+	for parent in parent_doctypes:
+		if not frappe.db.exists("DocType", parent):
+			continue
+		meta = frappe.get_meta(parent, cached=True)
+		for field in meta.get_table_fields():
+			if field.options:
+				children.add(field.options)
+	return children
 
 
 def _ensure_mobile_uuid_field(doctype: str) -> None:
@@ -34,7 +51,7 @@ def _ensure_mobile_uuid_field(doctype: str) -> None:
 		frappe.db.set_value(
 			"Custom Field",
 			existing[0],
-			{"label": "Mobile UUID", "fieldtype": "Data", "read_only": 1},
+			{"label": "Mobile UUID", "fieldtype": "Data", "read_only": 1, "unique": 1},
 			update_modified=False,
 		)
 		return
@@ -47,6 +64,7 @@ def _ensure_mobile_uuid_field(doctype: str) -> None:
 			"label": "Mobile UUID",
 			"fieldtype": "Data",
 			"read_only": 1,
+			"unique": 1,
 			"insert_after": "name",
 		}
 	)
