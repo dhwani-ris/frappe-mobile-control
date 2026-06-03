@@ -35,40 +35,66 @@ def _collect_child_doctypes(parent_doctypes: set[str]) -> set[str]:
 	return children
 
 
+_MOBILE_CUSTOM_FIELDS = [
+	{
+		"fieldname": "mobile_uuid",
+		"label": "Mobile UUID",
+		"fieldtype": "Data",
+		"read_only": 1,
+		"hidden": 1,
+		"unique": 1,
+		"insert_after": "name",
+	},
+	{
+		"fieldname": "mobile_created_at",
+		"label": "Mobile Created At",
+		"fieldtype": "Datetime",
+		"read_only": 1,
+		"hidden": 1,
+		"unique": 0,
+		"insert_after": "mobile_uuid",
+	},
+	{
+		"fieldname": "mobile_latitude_longitude",
+		"label": "Mobile Latitude Longitude",
+		"fieldtype": "Geolocation",
+		"read_only": 1,
+		"hidden": 1,
+		"unique": 0,
+		"insert_after": "mobile_created_at",
+	},
+]
+
+
 def _ensure_mobile_uuid_field(doctype: str) -> None:
 	if not frappe.db.exists("DocType", doctype):
 		return
-	if frappe.get_meta(doctype, cached=True).has_field("mobile_uuid"):
-		return
 
-	existing = frappe.get_all(
-		"Custom Field",
-		filters={"dt": doctype, "fieldname": "mobile_uuid"},
-		pluck="name",
-		limit=1,
-	)
-	if existing:
-		frappe.db.set_value(
+	meta = frappe.get_meta(doctype, cached=True)
+	existing_custom = {
+		row.fieldname: row.name
+		for row in frappe.get_all(
 			"Custom Field",
-			existing[0],
-			{"label": "Mobile UUID", "fieldtype": "Data", "read_only": 1, "unique": 1},
-			update_modified=False,
+			filters={"dt": doctype, "fieldname": ["in", [f["fieldname"] for f in _MOBILE_CUSTOM_FIELDS]]},
+			fields=["name", "fieldname"],
 		)
-		return
+	}
 
-	custom_field = frappe.get_doc(
-		{
-			"doctype": "Custom Field",
-			"dt": doctype,
-			"fieldname": "mobile_uuid",
-			"label": "Mobile UUID",
-			"fieldtype": "Data",
-			"read_only": 1,
-			"unique": 1,
-			"insert_after": "name",
-		}
-	)
-	custom_field.insert(ignore_permissions=True)
+	for spec in _MOBILE_CUSTOM_FIELDS:
+		fieldname = spec["fieldname"]
+
+		if meta.has_field(fieldname):
+			continue
+
+		if fieldname in existing_custom:
+			frappe.db.set_value(
+				"Custom Field",
+				existing_custom[fieldname],
+				{k: v for k, v in spec.items() if k not in ("insert_after", "fieldname")},
+				update_modified=False,
+			)
+		else:
+			frappe.get_doc({"doctype": "Custom Field", "dt": doctype, **spec}).insert(ignore_permissions=True)
 
 
 def update_doctype_meta_modified(doc: Document, method: str | None = None) -> None:
