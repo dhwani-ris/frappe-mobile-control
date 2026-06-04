@@ -57,7 +57,7 @@ def _meta_watermarks() -> dict[str, str]:
 	wm: dict[str, str] = {}
 	try:
 		config = frappe.get_single("Mobile Configuration")
-		for row in (config.table_lwis or []):
+		for row in config.table_lwis or []:
 			if row.mobile_workspace_item and row.doctype_meta_modifed_at:
 				wm[row.mobile_workspace_item] = str(row.doctype_meta_modifed_at)
 	except Exception:
@@ -82,9 +82,9 @@ def get_sync_details(doctypes: Any) -> dict[str, Any]:
 			# cursor's own last row and make `changed` perpetually true.
 			filters = [["modified", ">", since]] if since else []
 			# Permission-accurate existence check (limit 1).
-			changed = bool(
-				frappe.get_list(dt, filters=filters, limit_page_length=1, pluck="name")
-			) or not since
+			changed = (
+				bool(frappe.get_list(dt, filters=filters, limit_page_length=1, pluck="name")) or not since
+			)
 			# Advisory, bounded count.
 			count = (
 				len(frappe.get_list(dt, filters=filters, limit_page_length=COUNT_CAP, pluck="name"))
@@ -93,9 +93,7 @@ def get_sync_details(doctypes: Any) -> dict[str, Any]:
 			)
 			wm = meta_wm.get(dt)
 			meta_bumped = bool(wm and since and wm > since)
-			result.append(
-				{"doctype": dt, "changed": changed, "count": count, "meta_bumped": meta_bumped}
-			)
+			result.append({"doctype": dt, "changed": changed, "count": count, "meta_bumped": meta_bumped})
 		except Exception:
 			# Fail-safe: OMIT this doctype from the manifest on any error.
 			# `doctypesToSkip` only skips doctypes PRESENT with changed==false,
