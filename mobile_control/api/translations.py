@@ -1,5 +1,3 @@
-# mobile_control/api/translations.py
-
 """Incremental, single-language translation sync for the offline mobile mirror.
 
 Returns DB `Translation` rows for one language (plus its parent locale) using the
@@ -73,8 +71,6 @@ def get_translations(
 	if since:
 		filters["modified"] = [">", since]
 
-	# `get_list` applies the caller's read permission on Translation (the Mobile User
-	# role holds it via the Custom DocPerm fixture), so results are permission-accurate.
 	rows = frappe.get_list(
 		"Translation",
 		filters=filters,

@@ -1,5 +1,3 @@
-# mobile_control/api/sync_details.py
-
 """Pre-flight sync manifest for the offline mobile mirror (#27 / SDK #49).
 
 The mobile client sends the INCREMENTAL doctypes it is about to pull, each
@@ -20,9 +18,7 @@ from typing import Any
 import frappe
 from frappe import _
 
-# Cap the request list so a runaway client can't fan out unboundedly.
 MAX_DOCTYPES = 100
-# Advisory count is bounded — the SDK gates no decision on it (changed does).
 COUNT_CAP = 500
 
 
@@ -75,16 +71,7 @@ def get_sync_details(doctypes: Any) -> dict[str, Any]:
 			if not frappe.db.exists("DocType", dt) or not frappe.has_permission(dt, "read"):
 				result.append({"doctype": dt, "changed": False, "count": 0, "meta_bumped": False})
 				continue
-			# Strict `>` is REQUIRED, not a typo vs the pull's `>=`: `since`
-			# only ever comes from a COMPLETED cursor (drain reached an empty
-			# page), so every row `>= since` is already applied and new writes
-			# are strictly `> since`. `>=` here would always re-match the
-			# cursor's own last row and make `changed` perpetually true.
 			filters = [["modified", ">", since]] if since else []
-			# Single permission-accurate query per doctype (was two: existence +
-			# count). `frappe.get_list` (NOT get_all) still applies role perms,
-			# User Permissions, and permission_query_conditions, so results
-			# reflect only what the user could actually pull. Bounded by COUNT_CAP.
 			names = frappe.get_list(dt, filters=filters, limit_page_length=COUNT_CAP, pluck="name")
 			changed = bool(names) or not since
 			count = len(names) if changed else 0
@@ -92,11 +79,6 @@ def get_sync_details(doctypes: Any) -> dict[str, Any]:
 			meta_bumped = bool(wm and since and wm > since)
 			result.append({"doctype": dt, "changed": changed, "count": count, "meta_bumped": meta_bumped})
 		except Exception:
-			# Fail-safe: OMIT this doctype from the manifest on any error.
-			# `doctypesToSkip` only skips doctypes PRESENT with changed==false,
-			# so an omitted doctype is pulled — never wrongly skipped. One bad
-			# doctype must not 500 the whole manifest (which would disable the
-			# optimization for every doctype this cycle).
 			frappe.log_error(f"sync_details({dt}) failed: {frappe.get_traceback()}")
 			continue
 	return {"doctypes": result, "delete_signals": 0}

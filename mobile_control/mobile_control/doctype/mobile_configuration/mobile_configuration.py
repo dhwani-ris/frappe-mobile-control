@@ -1,7 +1,6 @@
 # Copyright (c) 2026, DHWANI RIS and contributors
 # For license information, please see license.txt
 
-# import frappe
 import frappe
 from frappe.model.document import Document
 from frappe.utils import now_datetime
@@ -13,9 +12,6 @@ class MobileConfiguration(Document):
 
 
 def _ensure_mobile_uuid_fields(config: "MobileConfiguration") -> None:
-	# Cover both the configured top-level workspace doctypes and every
-	# child doctype reachable through their Table / Table MultiSelect
-	# fields, so the mobile SDK can round-trip child-row identity.
 	top_level = {row.mobile_workspace_item for row in (config.table_lwis or []) if row.mobile_workspace_item}
 	for doctype in top_level | _collect_child_doctypes(top_level):
 		_ensure_mobile_uuid_field(doctype)
@@ -87,10 +83,6 @@ def _ensure_mobile_uuid_field(doctype: str) -> None:
 
 		cf_name = existing_custom.get(fieldname)
 		if cf_name:
-			# Already added as a Custom Field. Reconcile its properties so a
-			# field created before `hidden`/`read_only` were part of the spec
-			# gets corrected — do NOT skip it (the old `has_field` short-circuit
-			# left such fields visible). Only write when something differs.
 			current = frappe.db.get_value("Custom Field", cf_name, list(props.keys()), as_dict=True)
 			if current and any(current.get(k) != v for k, v in props.items()):
 				frappe.db.set_value("Custom Field", cf_name, props, update_modified=False)
@@ -98,7 +90,6 @@ def _ensure_mobile_uuid_field(doctype: str) -> None:
 			continue
 
 		if meta.has_field(fieldname):
-			# Exists as a standard (non-custom) field — not ours to manage.
 			continue
 
 		frappe.get_doc({"doctype": "Custom Field", "dt": doctype, **spec}).insert(ignore_permissions=True)
