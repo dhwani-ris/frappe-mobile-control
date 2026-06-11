@@ -54,11 +54,8 @@ class TestGetTranslations(UnitTestCase):
 		frappe.set_user(self._orig_user)
 
 	# ---- guards -------------------------------------------------------------
-	def test_guest_rejected(self) -> None:
-		frappe.set_user("Guest")
-		with self.assertRaises(frappe.AuthenticationError):
-			translations.get_translations(lang="hi")
-
+	# Guest rejection is enforced by @frappe.whitelist at the framework layer,
+	# not in the function body, so it is not unit-tested here.
 	def test_missing_lang_rejected(self) -> None:
 		with self.assertRaises(frappe.ValidationError):
 			translations.get_translations(lang="")

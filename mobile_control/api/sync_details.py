@@ -81,16 +81,13 @@ def get_sync_details(doctypes: Any) -> dict[str, Any]:
 			# are strictly `> since`. `>=` here would always re-match the
 			# cursor's own last row and make `changed` perpetually true.
 			filters = [["modified", ">", since]] if since else []
-			# Permission-accurate existence check (limit 1).
-			changed = (
-				bool(frappe.get_list(dt, filters=filters, limit_page_length=1, pluck="name")) or not since
-			)
-			# Advisory, bounded count.
-			count = (
-				len(frappe.get_list(dt, filters=filters, limit_page_length=COUNT_CAP, pluck="name"))
-				if changed
-				else 0
-			)
+			# Single permission-accurate query per doctype (was two: existence +
+			# count). `frappe.get_list` (NOT get_all) still applies role perms,
+			# User Permissions, and permission_query_conditions, so results
+			# reflect only what the user could actually pull. Bounded by COUNT_CAP.
+			names = frappe.get_list(dt, filters=filters, limit_page_length=COUNT_CAP, pluck="name")
+			changed = bool(names) or not since
+			count = len(names) if changed else 0
 			wm = meta_wm.get(dt)
 			meta_bumped = bool(wm and since and wm > since)
 			result.append({"doctype": dt, "changed": changed, "count": count, "meta_bumped": meta_bumped})

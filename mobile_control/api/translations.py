@@ -46,10 +46,11 @@ def get_translations(
 	limit_page_length: int = DEFAULT_PAGE_LENGTH,
 	include_parent: int = 1,
 ) -> dict[str, Any]:
-	"""Incremental DB-`Translation` delta for a single language. Authenticated only."""
-	if frappe.session.user == "Guest":
-		frappe.throw(_("Authentication required"), frappe.AuthenticationError)
+	"""Incremental DB-`Translation` delta for a single language.
 
+	Guest access is rejected by the framework: `@frappe.whitelist()` (no
+	`allow_guest`) makes `frappe.is_whitelisted` raise before this body runs.
+	"""
 	lang = (lang or "").strip()
 	if not lang:
 		frappe.throw(_("`lang` is required"), frappe.ValidationError)
