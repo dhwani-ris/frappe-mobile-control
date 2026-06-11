@@ -196,6 +196,8 @@ override_whitelisted_methods = {
 	"mobile_auth.get_social_login_providers": "mobile_control.api.api_auth.get_social_login_providers",
 	"mobile_auth.get_social_authorize_url": "mobile_control.api.api_auth.get_social_authorize_url",
 	"mobile_sync.get_docs_with_children": "mobile_control.api.bulk_fetch.get_docs_with_children",
+	"mobile_sync.sync_details": "mobile_control.api.sync_details.get_sync_details",
+	"mobile_sync.get_translations": "mobile_control.api.translations.get_translations",
 }
 #
 # each overriding function accepts a `data` argument;
@@ -269,4 +271,22 @@ before_request = ["mobile_control.api.jwt_auth.token_auth_middleware"]
 
 # Fixtures
 # --------
-fixtures = [{"doctype": "Role", "filters": {"name": ["in", ["Mobile User"]]}}]
+fixtures = [
+	{"doctype": "Role", "filters": {"name": ["in", ["Mobile User"]]}},
+	# Grant the Mobile User role read on the core metadata doctypes the mobile
+	# SDK reads directly via /api/resource. Each row set REPLICATES the doctype's
+	# standard perms (override trap: any Custom DocPerm makes frappe ignore the
+	# built-in DocPerms) plus a Mobile User read row. The standard perms for these
+	# four are identical across v15/v16/v17, so the snapshot is version-safe.
+	# `DocType`/`DocField`/`DocPerm` are intentionally absent — Meta hardcodes them
+	# to ignore Custom DocPerm, so granting them this way is a silent no-op.
+	{
+		"doctype": "Custom DocPerm",
+		"filters": {
+			"parent": [
+				"in",
+				["Custom Field", "Property Setter", "Translation", "DocType Layout"],
+			]
+		},
+	},
+]
