@@ -5,3 +5,4 @@
 [post_model_sync]
 # Patches added in this section will be executed after doctypes are migrated
 mobile_control.patches.v1_0.set_offline_enabled_default
+mobile_control.patches.v1_0.rename_doctype_meta_modified_field

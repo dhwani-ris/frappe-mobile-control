@@ -58,8 +58,8 @@ def _meta_watermarks() -> dict[str, str]:
 	try:
 		config = frappe.get_single("Mobile Configuration")
 		for row in config.table_lwis or []:
-			if row.mobile_workspace_item and row.doctype_meta_modifed_at:
-				wm[row.mobile_workspace_item] = str(row.doctype_meta_modifed_at)
+			if row.mobile_workspace_item and row.doctype_meta_modified_at:
+				wm[row.mobile_workspace_item] = str(row.doctype_meta_modified_at)
 	except Exception:
 		frappe.log_error(f"sync_details meta watermark read failed: {frappe.get_traceback()}")
 	return wm

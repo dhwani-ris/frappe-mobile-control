@@ -80,21 +80,32 @@ def _ensure_mobile_uuid_field(doctype: str) -> None:
 		)
 	}
 
+	changed = False
 	for spec in _MOBILE_CUSTOM_FIELDS:
 		fieldname = spec["fieldname"]
+		props = {k: v for k, v in spec.items() if k not in ("insert_after", "fieldname")}
 
-		if meta.has_field(fieldname):
+		cf_name = existing_custom.get(fieldname)
+		if cf_name:
+			# Already added as a Custom Field. Reconcile its properties so a
+			# field created before `hidden`/`read_only` were part of the spec
+			# gets corrected — do NOT skip it (the old `has_field` short-circuit
+			# left such fields visible). Only write when something differs.
+			current = frappe.db.get_value("Custom Field", cf_name, list(props.keys()), as_dict=True)
+			if current and any(current.get(k) != v for k, v in props.items()):
+				frappe.db.set_value("Custom Field", cf_name, props, update_modified=False)
+				changed = True
 			continue
 
-		if fieldname in existing_custom:
-			frappe.db.set_value(
-				"Custom Field",
-				existing_custom[fieldname],
-				{k: v for k, v in spec.items() if k not in ("insert_after", "fieldname")},
-				update_modified=False,
-			)
-		else:
-			frappe.get_doc({"doctype": "Custom Field", "dt": doctype, **spec}).insert(ignore_permissions=True)
+		if meta.has_field(fieldname):
+			# Exists as a standard (non-custom) field — not ours to manage.
+			continue
+
+		frappe.get_doc({"doctype": "Custom Field", "dt": doctype, **spec}).insert(ignore_permissions=True)
+		changed = True
+
+	if changed:
+		frappe.clear_cache(doctype=doctype)
 
 
 def update_doctype_meta_modified(doc: Document, method: str | None = None) -> None:
@@ -119,7 +130,7 @@ def update_doctype_meta_modified(doc: Document, method: str | None = None) -> No
 		frappe.db.set_value(
 			"Mobile Configuration Form",
 			row_name,
-			"doctype_meta_modifed_at",
+			"doctype_meta_modified_at",
 			modified_at,
 			update_modified=False,
 		)

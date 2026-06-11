@@ -18,7 +18,9 @@ def get_mobile_configuration_payload() -> dict[str, Any]:
 					{
 						"mobile_workspace_item": row.mobile_workspace_item,
 						"group_name": row.workspace_group_name or "",
-						"doctype_meta_modifed_at": row.doctype_meta_modifed_at or "",
+						# Client-facing config key — renamed in lockstep with the SDK,
+						# which must now read `doctype_meta_modified_at`.
+						"doctype_meta_modified_at": row.doctype_meta_modified_at or "",
 						"doctype_icon": row.doctype_icon or "",
 						"order": row.order or 0,
 					}
