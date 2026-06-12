@@ -47,15 +47,11 @@ class TestGetTranslations(UnitTestCase):
 	def setUp(self) -> None:
 		self._orig_user = frappe.session.user
 		frappe.set_user("Administrator")
-		# Capturable header sink (no real request in unit tests).
 		frappe.local.response_headers = {}
 
 	def tearDown(self) -> None:
 		frappe.set_user(self._orig_user)
 
-	# ---- guards -------------------------------------------------------------
-	# Guest rejection is enforced by @frappe.whitelist at the framework layer,
-	# not in the function body, so it is not unit-tested here.
 	def test_missing_lang_rejected(self) -> None:
 		with self.assertRaises(frappe.ValidationError):
 			translations.get_translations(lang="")
@@ -65,7 +61,6 @@ class TestGetTranslations(UnitTestCase):
 			with self.assertRaises(frappe.ValidationError):
 				translations.get_translations(lang="zz")
 
-	# ---- full pull ----------------------------------------------------------
 	def test_full_pull_returns_rows_and_watermark(self) -> None:
 		with (
 			patch(f"{MODULE}.get_all_languages", return_value=["en", "hi"]),
@@ -79,11 +74,9 @@ class TestGetTranslations(UnitTestCase):
 		self.assertEqual(res["watermark"], "2026-06-08 16:06:15.452527")
 		self.assertEqual(res["entries"][1]["context"], "disease")
 		self.assertTrue(res["full_pull_token"])
-		# full pull → no modified filter
 		filters = _my_call(gl).kwargs["filters"]
 		self.assertNotIn("modified", filters)
 
-	# ---- delta --------------------------------------------------------------
 	def test_delta_filters_by_since(self) -> None:
 		with (
 			patch(f"{MODULE}.get_all_languages", return_value=["en", "hi"]),
@@ -105,7 +98,6 @@ class TestGetTranslations(UnitTestCase):
 		self.assertFalse(res["has_more"])
 		self.assertEqual(res["watermark"], "2026-06-08 16:06:15.452527")
 
-	# ---- pagination ---------------------------------------------------------
 	def test_has_more_when_page_fills(self) -> None:
 		with (
 			patch(f"{MODULE}.get_all_languages", return_value=["en", "hi"]),
@@ -115,7 +107,6 @@ class TestGetTranslations(UnitTestCase):
 		self.assertTrue(res["has_more"])
 		self.assertEqual(_my_call(gl).kwargs["limit_page_length"], 2)
 
-	# ---- parent language ----------------------------------------------------
 	def test_parent_language_included_by_default(self) -> None:
 		with (
 			patch(f"{MODULE}.get_all_languages", return_value=["en", "es", "es-CO"]),
@@ -134,7 +125,6 @@ class TestGetTranslations(UnitTestCase):
 			translations.get_translations(lang="es-CO", include_parent=0)
 		self.assertEqual(_my_call(gl).kwargs["filters"]["language"], ["in", ["es-CO"]])
 
-	# ---- caching ------------------------------------------------------------
 	def test_sets_no_store_header(self) -> None:
 		with (
 			patch(f"{MODULE}.get_all_languages", return_value=["en", "hi"]),
