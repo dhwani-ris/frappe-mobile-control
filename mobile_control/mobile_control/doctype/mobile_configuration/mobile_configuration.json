@@ -15,7 +15,8 @@
   "maintenance_mode",
   "maintenance_message",
   "forms_configuration_section",
-  "table_lwis"
+  "table_lwis",
+  "mobile_error_log_retention_days"
  ],
  "fields": [
   {
@@ -79,6 +80,13 @@
    "fieldtype": "Data",
    "label": "Minimum App Version",
    "mandatory_depends_on": "eval:doc.enabled"
+  },
+  {
+   "default": "30",
+   "fieldname": "mobile_error_log_retention_days",
+   "fieldtype": "Int",
+   "label": "Mobile Error Log Retention (days)",
+   "description": "Mobile Error Log rows older than this are purged daily. 0 disables purging."
   }
  ],
  "grid_page_length": 50,

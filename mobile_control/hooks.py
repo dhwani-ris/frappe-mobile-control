@@ -83,7 +83,7 @@ app_license = "mit"
 # ------------
 
 # before_install = "mobile_control.install.before_install"
-# after_install = "mobile_control.install.after_install"
+after_install = "mobile_control.install.after_install"
 
 # Uninstallation
 # ------------
@@ -171,7 +171,10 @@ doc_events = {
 # ---------------
 
 scheduler_events = {
-	"daily": ["mobile_control.tasks.cleanup_mobile_refresh_tokens"],
+	"daily": [
+		"mobile_control.tasks.cleanup_mobile_refresh_tokens",
+		"mobile_control.tasks.purge_mobile_error_logs",
+	],
 }
 
 # Testing
@@ -198,6 +201,7 @@ override_whitelisted_methods = {
 	"mobile_sync.get_docs_with_children": "mobile_control.api.bulk_fetch.get_docs_with_children",
 	"mobile_sync.sync_details": "mobile_control.api.sync_details.get_sync_details",
 	"mobile_sync.get_translations": "mobile_control.api.translations.get_translations",
+	"mobile_sync.report_error": "mobile_control.api.error_log.report_error",
 }
 #
 # each overriding function accepts a `data` argument;
