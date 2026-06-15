@@ -142,5 +142,6 @@ def report_error(payload: Any) -> dict[str, str]:
 	doc.flags.ignore_links = True
 	doc.flags.ignore_permissions = True
 	doc.save(ignore_permissions=True)
-	frappe.db.commit()
+	# No explicit commit: this whitelisted endpoint is reached over HTTP, and Frappe
+	# commits the request transaction on a successful response.
 	return {"status": "ok", "name": doc.name}
