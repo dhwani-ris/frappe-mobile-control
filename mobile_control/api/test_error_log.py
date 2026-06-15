@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import frappe
-from frappe.tests import UnitTestCase
+from frappe.tests import IntegrationTestCase
 from frappe.utils import add_to_date
 from frappe.utils import now_datetime
 from mobile_control import tasks as mc_tasks
@@ -35,11 +35,13 @@ def _payload(signature="sig-1", count=1, examples=None):
 	}
 
 
-class TestReportError(UnitTestCase):
+class TestReportError(IntegrationTestCase):
 	def tearDown(self):
+		# Per-test isolation: several tests reuse signature "sig-1". The class-level
+		# transaction is only rolled back once at the end, so clear these rows between
+		# tests. No commit — the framework rolls the whole transaction back at class end.
 		frappe.db.delete("Mobile Error Log", {"signature": ("like", "sig-%")})
-		# UnitTestCase is non-transactional; an explicit commit is required to persist this write.
-		frappe.db.commit()  # nosemgrep: frappe-semgrep-rules.rules.frappe-manual-commit
+		super().tearDown()
 
 	def test_first_post_creates_row_and_renders_curl(self):
 		error_log.report_error(payload=_payload())
@@ -114,11 +116,11 @@ class TestReportError(UnitTestCase):
 		self.assertNotIn("prod.example.com", curl)
 
 
-class TestPurgeMobileErrorLogs(UnitTestCase):
+class TestPurgeMobileErrorLogs(IntegrationTestCase):
 	def tearDown(self):
+		# Per-test isolation between purge-* fixtures; class-end rollback handles the rest.
 		frappe.db.delete("Mobile Error Log", {"signature": ("like", "purge-%")})
-		# UnitTestCase is non-transactional; an explicit commit is required to persist this write.
-		frappe.db.commit()  # nosemgrep: frappe-semgrep-rules.rules.frappe-manual-commit
+		super().tearDown()
 
 	def _make(self, signature, age_days):
 		error_log.report_error(
@@ -143,16 +145,12 @@ class TestPurgeMobileErrorLogs(UnitTestCase):
 			{"last_seen": old, "creation": old},
 			update_modified=False,
 		)
-		# UnitTestCase is non-transactional; an explicit commit is required to persist this write.
-		frappe.db.commit()  # nosemgrep: frappe-semgrep-rules.rules.frappe-manual-commit
 
 	def test_purge_deletes_old_keeps_new(self):
 		frappe.db.set_single_value("Mobile Configuration", "mobile_error_log_retention_days", 30)
 		self._make("purge-old", age_days=45)
 		self._make("purge-new", age_days=5)
 		mc_tasks.purge_mobile_error_logs()
-		# UnitTestCase is non-transactional; an explicit commit is required to persist this write.
-		frappe.db.commit()  # nosemgrep: frappe-semgrep-rules.rules.frappe-manual-commit
 		self.assertFalse(frappe.db.exists("Mobile Error Log", {"signature": "purge-old"}))
 		self.assertTrue(frappe.db.exists("Mobile Error Log", {"signature": "purge-new"}))
 
@@ -160,6 +158,4 @@ class TestPurgeMobileErrorLogs(UnitTestCase):
 		frappe.db.set_single_value("Mobile Configuration", "mobile_error_log_retention_days", 0)
 		self._make("purge-keep", age_days=999)
 		mc_tasks.purge_mobile_error_logs()
-		# UnitTestCase is non-transactional; an explicit commit is required to persist this write.
-		frappe.db.commit()  # nosemgrep: frappe-semgrep-rules.rules.frappe-manual-commit
 		self.assertTrue(frappe.db.exists("Mobile Error Log", {"signature": "purge-keep"}))
