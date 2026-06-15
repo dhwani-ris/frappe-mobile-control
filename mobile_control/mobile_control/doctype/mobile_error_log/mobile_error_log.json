@@ -54,7 +54,6 @@
  "permissions": [
   {"role": "System Manager", "read": 1, "delete": 1, "report": 1, "export": 1, "share": 1}
  ],
- "read_only": 1,
  "sort_field": "last_seen",
  "sort_order": "DESC",
  "states": [],
