@@ -83,7 +83,7 @@ app_license = "mit"
 # ------------
 
 # before_install = "mobile_control.install.before_install"
-after_install = "mobile_control.install.after_install"
+# after_install = "mobile_control.install.after_install"
 
 # Uninstallation
 # ------------
