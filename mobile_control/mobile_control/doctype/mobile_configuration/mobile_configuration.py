@@ -100,6 +100,9 @@ def _ensure_mobile_uuid_field(doctype: str) -> None:
 
 
 def update_doctype_meta_modified(doc: Document, method: str | None = None) -> None:
+	if not frappe.db.has_column("Mobile Configuration Form", "doctype_meta_modified_at"):
+		return
+
 	doctype_name = _get_doctype_name_from_doc(doc)
 	if not doctype_name:
 		return
