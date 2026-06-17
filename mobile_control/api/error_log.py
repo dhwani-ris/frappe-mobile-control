@@ -20,6 +20,7 @@ from urllib.parse import urlunsplit
 import frappe
 from frappe import _
 from frappe.utils import now_datetime
+from mobile_control.api.helpers.user_auth import validate_mobile_user_role
 
 MAX_EXAMPLES = 5
 
@@ -91,6 +92,8 @@ def report_error(payload: Any) -> dict[str, str]:
 	Args:
 	    payload: dict (or JSON string) produced by the SDK's ErrorLogCollector.
 	"""
+	validate_mobile_user_role()
+
 	if isinstance(payload, str):
 		try:
 			payload = json.loads(payload)
