@@ -1,0 +1,32 @@
+{
+ "actions": [],
+ "creation": "2026-06-11 00:00:00",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "mobile_uuid",
+  "occurred_at",
+  "request_payload",
+  "response_body",
+  "curl_command"
+ ],
+ "fields": [
+  {"fieldname": "mobile_uuid", "fieldtype": "Data", "label": "Mobile UUID", "in_list_view": 1, "read_only": 1},
+  {"fieldname": "occurred_at", "fieldtype": "Datetime", "label": "Occurred At", "in_list_view": 1, "read_only": 1},
+  {"fieldname": "request_payload", "fieldtype": "Code", "label": "Request Payload", "options": "JSON", "read_only": 1},
+  {"fieldname": "response_body", "fieldtype": "Code", "label": "Response Body", "read_only": 1},
+  {"fieldname": "curl_command", "fieldtype": "Code", "label": "CURL Command", "read_only": 1}
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-06-11 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Mobile Control",
+ "name": "Mobile Error Log Example",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
