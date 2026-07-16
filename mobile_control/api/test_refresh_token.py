@@ -102,12 +102,8 @@ class TestRefreshTokenEndpoint(IntegrationTestCase):
 		raw = create_refresh_token(self.mobile_user, device_id="dev-3", user_agent="ua-3")
 		# Match the exact row we just created by its stored hash (robust against
 		# same-second `creation` ties with tokens from earlier tests).
-		token_name = frappe.get_value(
-			"Mobile Refresh Token", {"token_hash": hash_refresh_token(raw)}, "name"
-		)
-		frappe.db.set_value(
-			"Mobile Refresh Token", token_name, "expires_at", add_days(now_datetime(), -1)
-		)
+		token_name = frappe.get_value("Mobile Refresh Token", {"token_hash": hash_refresh_token(raw)}, "name")
+		frappe.db.set_value("Mobile Refresh Token", token_name, "expires_at", add_days(now_datetime(), -1))
 		self._reset_response()
 
 		with self.assertRaises(frappe.AuthenticationError) as cm:
