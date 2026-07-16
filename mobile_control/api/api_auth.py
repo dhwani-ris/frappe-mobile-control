@@ -324,7 +324,7 @@ def verify_mobile_otp(tmp_id: str, otp: str) -> None:
 @rate_limit(
 	key="refresh_token", limit=get_mobile_login_ratelimit, seconds=60 * 60
 )  # comment out for now to avoid rate limiting while testing
-def refresh_token(refresh_token: str) -> dict[str, str]:
+def refresh_token(refresh_token: str) -> None:
 	"""Refresh access token using refresh token."""
 	try:
 		token_doc = get_valid_refresh_token_doc(refresh_token)
@@ -338,20 +338,34 @@ def refresh_token(refresh_token: str) -> dict[str, str]:
 		mobile_config = payload.get("configuration", [])
 		offline_enabled = bool(payload.get("offline_enabled", False))
 
-		return build_auth_response(
-			user_doc,
-			access_token,
-			refresh_token=new_refresh_token,
-			message=_("Token refreshed"),
-			mobile_config=mobile_config,
-			offline_enabled=offline_enabled,
+		# Write tokens to the top level of the response (same as `login`).
+		# Frappe wraps a whitelisted function's *return* value under a top-level
+		# `message` key (frappe/handler.py: `frappe.response["message"] = data`),
+		# so `return build_auth_response(...)` would nest access_token/refresh_token
+		# under `message` — inconsistent with `login`, which uses
+		# `frappe.local.response.update(...)`. Mobile clients read the tokens at
+		# the top level, so mirror `login` here.
+		frappe.local.response.update(
+			build_auth_response(
+				user_doc,
+				access_token,
+				refresh_token=new_refresh_token,
+				message=_("Token refreshed"),
+				mobile_config=mobile_config,
+				offline_enabled=offline_enabled,
+			)
 		)
 	except frappe.AuthenticationError:
-		frappe.throw(_("Invalid or expired refresh token"))
+		# Invalid/expired refresh token → 401 so the client re-authenticates
+		# (AuthenticationError.http_status_code == 401). A bare frappe.throw would
+		# raise ValidationError (417), which clients treat as a param error.
+		frappe.throw(_("Invalid or expired refresh token"), frappe.AuthenticationError)
 	except frappe.PermissionError:
-		frappe.throw(_("Not allowed to use mobile app"))
+		# Not allowed on mobile → 403 (PermissionError.http_status_code == 403).
+		frappe.throw(_("Not allowed to use mobile app"), frappe.PermissionError)
 	except frappe.ValidationError:
-		frappe.throw(_("Invalid request parameters"))
+		# Missing/invalid parameters → 417 (Frappe default for ValidationError).
+		frappe.throw(_("Invalid request parameters"), frappe.ValidationError)
 	except Exception as e:
 		frappe.log_error(f"Mobile Refresh Token Error: {e}")
 		frappe.throw(_("Failed to refresh token. Please try again."))
