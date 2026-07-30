@@ -1,4 +1,5 @@
 import frappe
+from frappe.utils import add_to_date
 from frappe.utils import now_datetime
 
 
@@ -20,3 +21,24 @@ def cleanup_mobile_refresh_tokens() -> None:
 			expired_count,
 			revoked_count,
 		)
+
+
+def purge_mobile_error_logs() -> None:
+	"""Delete Mobile Error Log rows older than the configured retention.
+
+	Retention days come from the Mobile Configuration single (default 30).
+	A value of 0 disables purging. Mirrors Frappe Error Log's clear_old_logs.
+	"""
+	days = frappe.db.get_single_value("Mobile Configuration", "mobile_error_log_retention_days")
+	try:
+		days = int(days)
+	except (TypeError, ValueError):
+		days = 30
+	if days <= 0:
+		return
+
+	cutoff = add_to_date(now_datetime(), days=-days)
+	count = frappe.db.count("Mobile Error Log", {"last_seen": ("<", cutoff)})
+	if count:
+		frappe.db.delete("Mobile Error Log", {"last_seen": ("<", cutoff)})
+		frappe.logger("mobile_control").info("Purged %s Mobile Error Log rows", count)

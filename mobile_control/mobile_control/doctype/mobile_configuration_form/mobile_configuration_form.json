@@ -13,7 +13,7 @@
   "doctype_icon",
   "column_break_bbsc",
   "order",
-  "doctype_meta_modifed_at"
+  "doctype_meta_modified_at"
  ],
  "fields": [
   {
@@ -25,9 +25,9 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "doctype_meta_modifed_at",
+   "fieldname": "doctype_meta_modified_at",
    "fieldtype": "Datetime",
-   "label": "Doctype Meta Modifed At"
+   "label": "Doctype Meta Modified At"
   },
   {
    "fieldname": "doctype_icon",

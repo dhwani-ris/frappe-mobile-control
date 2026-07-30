@@ -117,11 +117,12 @@ Login, `mobile_auth.verify_login_otp`, and `mobile_auth.refresh_token` return a 
   "language": "en",
   "access_token": "...",
   "refresh_token": "...",
+  "offline_enabled": false,
   "mobile_form_names": [
     {
       "mobile_workspace_item": "Mobile Refresh Token",
       "group_name": "",
-      "doctype_meta_modifed_at": "2026-02-14 14:40:49.962439",
+      "doctype_meta_modified_at": "2026-02-14 14:40:49.962439",
       "doctype_icon": ""
     }
   ],
@@ -142,6 +143,7 @@ Login, `mobile_auth.verify_login_otp`, and `mobile_auth.refresh_token` return a 
 ```
 
 - `language` is the user's language (default `"en"` if blank).
+- `offline_enabled` is the value of the `Mobile Configuration.offline_enabled` Check field. The mobile SDK uses this to decide whether to run as an offline-first client or a thin online client. Default `false`. Only emitted when the parent `enabled` flag is on. See the SDK's `doc/OFFLINE_MODE_TOGGLE.md` for the full client-side contract.
 - `roles` is an array of role names.
 - `permissions` is an array of objects; each has `doctype` and the flags `read`, `write`, `create`, `delete`, `submit`, `cancel`, `amend`.
 
@@ -257,6 +259,65 @@ The `API/` directory contains a Bruno collection to try the mobile auth endpoint
 | `App Configuration.bru` | GET mobile configuration list. Guest. |
 
 **Setup:** Set `base_url` in collection/environment variables. For auth requests, set `username`, `password`, and after login use the returned `access_token` as Bearer token in subsequent requests (or use Bruno’s response scripts to save the token).
+
+
+### Mobile Error Log
+
+When a mobile push permanently fails on the server (a terminal `4XX`, terminal `401`, or `5XX`), the SDK records the exact failing request and posts an aggregated report here. The goal is to let a developer reconstruct a replayable request — same payload, same user, same permissions — without asking the field user for steps to reproduce. Capture is automatic on the device; the host app does not wire anything up.
+
+Two doctypes back the feature:
+
+| DocType | Purpose |
+|---------|---------|
+| **Mobile Error Log** | One row per unique failure *signature*. Holds the failing DocType, operation, HTTP status, exception type, request method/URL, the reporting user (raw value + `User` link), their roles, trace id, app version, device, an `occurrence_count`, and `last_seen`. Read-only; **System Manager** read/delete only. |
+| **Mobile Error Log Example** (child) | A rolling window of the **5 most recent** occurrences for a signature. Each holds the `mobile_uuid`, `occurred_at`, the JSON `request_payload`, the server `response_body`, and a rendered `curl_command`. |
+
+#### `mobile_sync.report_error`
+
+`POST` (whitelisted). Resolves to `mobile_control.api.error_log.report_error`. Takes a single `payload` argument — the JSON object the SDK's `ErrorLogCollector` aggregates per drain:
+
+```json
+{
+  "signature": "<client-computed stable hash of the failure>",
+  "doctype_name": "Household Survey",
+  "operation": "update",
+  "http_status": 417,
+  "exc_type": "...",
+  "request_method": "PUT",
+  "request_url": "https://.../api/resource/Household%20Survey/...",
+  "error_user": "Administrator",
+  "error_user_roles": ["System Manager", "..."],
+  "trace_id": "<X-Frappe-Request-Id, if server monitoring is on>",
+  "app_version": "...",
+  "device": "...",
+  "occurrence_count": 1,
+  "examples": [
+    {
+      "mobile_uuid": "...",
+      "occurred_at": "2026-06-12 12:00:00",
+      "request_payload": "<verbatim request body JSON>",
+      "response_body": "<verbatim server response>"
+    }
+  ]
+}
+```
+
+Behaviour:
+
+- **UPSERT by `signature`** — the signature is taken **verbatim and never recomputed server-side**. A repeat failure increments `occurrence_count` and refreshes the volatile fields (roles, trace id, `last_seen`) rather than creating a new row.
+- **Last-5 examples** — incoming examples are appended and evicted to the most recent 5 per signature.
+- **`signature` is required**; a missing/blank one is a `ValidationError`.
+- Saved with `ignore_links` (a deactivated or renamed `error_user` must never block the insert) and `ignore_permissions` (the doctype has no create permission by design).
+
+Returns `{"status": "ok", "name": "<row name>"}`.
+
+#### Replaying a failure
+
+Each example stores a `curl_command` rendered from its method, URL, and payload. The **host and auth token are never stored** — they are emitted as `{{HOST}}` and `{{TOKEN}}` placeholders. To replay: substitute your own bench host and a token for the same user (`error_user`), then run the CURL to reproduce the original server response.
+
+#### Retention
+
+Rows are purged daily by `mobile_control.tasks.purge_mobile_error_logs`. Retention is configurable on **Mobile Configuration** via `mobile_error_log_retention_days` (default **30**); rows older than that are deleted.
 
 
 ### Contributing

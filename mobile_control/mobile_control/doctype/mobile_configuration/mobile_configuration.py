@@ -1,7 +1,6 @@
 # Copyright (c) 2026, DHWANI RIS and contributors
 # For license information, please see license.txt
 
-# import frappe
 import frappe
 from frappe.model.document import Document
 from frappe.utils import now_datetime
@@ -13,47 +12,97 @@ class MobileConfiguration(Document):
 
 
 def _ensure_mobile_uuid_fields(config: "MobileConfiguration") -> None:
-	doctypes = {row.mobile_workspace_item for row in (config.table_lwis or []) if row.mobile_workspace_item}
-	for doctype in doctypes:
+	top_level = {row.mobile_workspace_item for row in (config.table_lwis or []) if row.mobile_workspace_item}
+	for doctype in top_level | _collect_child_doctypes(top_level):
 		_ensure_mobile_uuid_field(doctype)
+
+
+def _collect_child_doctypes(parent_doctypes: set[str]) -> set[str]:
+	"""Child doctype names referenced by any parent's Table / Table
+	MultiSelect fields. Read-only."""
+	children: set[str] = set()
+	for parent in parent_doctypes:
+		if not frappe.db.exists("DocType", parent):
+			continue
+		meta = frappe.get_meta(parent, cached=True)
+		for field in meta.get_table_fields():
+			if field.options:
+				children.add(field.options)
+	return children
+
+
+_MOBILE_CUSTOM_FIELDS = [
+	{
+		"fieldname": "mobile_uuid",
+		"label": "Mobile UUID",
+		"fieldtype": "Data",
+		"read_only": 1,
+		"hidden": 1,
+		"unique": 1,
+		"insert_after": "name",
+	},
+	{
+		"fieldname": "mobile_created_at",
+		"label": "Mobile Created At",
+		"fieldtype": "Datetime",
+		"read_only": 1,
+		"hidden": 1,
+		"unique": 0,
+		"insert_after": "mobile_uuid",
+	},
+	{
+		"fieldname": "mobile_latitude_longitude",
+		"label": "Mobile Latitude Longitude",
+		"fieldtype": "Geolocation",
+		"read_only": 1,
+		"hidden": 1,
+		"unique": 0,
+		"insert_after": "mobile_created_at",
+	},
+]
 
 
 def _ensure_mobile_uuid_field(doctype: str) -> None:
 	if not frappe.db.exists("DocType", doctype):
 		return
-	if frappe.get_meta(doctype, cached=True).has_field("mobile_uuid"):
-		return
 
-	existing = frappe.get_all(
-		"Custom Field",
-		filters={"dt": doctype, "fieldname": "mobile_uuid"},
-		pluck="name",
-		limit=1,
-	)
-	if existing:
-		frappe.db.set_value(
+	meta = frappe.get_meta(doctype, cached=True)
+	existing_custom = {
+		row.fieldname: row.name
+		for row in frappe.get_all(
 			"Custom Field",
-			existing[0],
-			{"label": "Mobile UUID", "fieldtype": "Data", "read_only": 1},
-			update_modified=False,
+			filters={"dt": doctype, "fieldname": ["in", [f["fieldname"] for f in _MOBILE_CUSTOM_FIELDS]]},
+			fields=["name", "fieldname"],
 		)
-		return
+	}
 
-	custom_field = frappe.get_doc(
-		{
-			"doctype": "Custom Field",
-			"dt": doctype,
-			"fieldname": "mobile_uuid",
-			"label": "Mobile UUID",
-			"fieldtype": "Data",
-			"read_only": 1,
-			"insert_after": "name",
-		}
-	)
-	custom_field.insert(ignore_permissions=True)
+	changed = False
+	for spec in _MOBILE_CUSTOM_FIELDS:
+		fieldname = spec["fieldname"]
+		props = {k: v for k, v in spec.items() if k not in ("insert_after", "fieldname")}
+
+		cf_name = existing_custom.get(fieldname)
+		if cf_name:
+			current = frappe.db.get_value("Custom Field", cf_name, list(props.keys()), as_dict=True)
+			if current and any(current.get(k) != v for k, v in props.items()):
+				frappe.db.set_value("Custom Field", cf_name, props, update_modified=False)
+				changed = True
+			continue
+
+		if meta.has_field(fieldname):
+			continue
+
+		frappe.get_doc({"doctype": "Custom Field", "dt": doctype, **spec}).insert(ignore_permissions=True)
+		changed = True
+
+	if changed:
+		frappe.clear_cache(doctype=doctype)
 
 
 def update_doctype_meta_modified(doc: Document, method: str | None = None) -> None:
+	if not frappe.db.has_column("Mobile Configuration Form", "doctype_meta_modified_at"):
+		return
+
 	doctype_name = _get_doctype_name_from_doc(doc)
 	if not doctype_name:
 		return
@@ -75,7 +124,7 @@ def update_doctype_meta_modified(doc: Document, method: str | None = None) -> No
 		frappe.db.set_value(
 			"Mobile Configuration Form",
 			row_name,
-			"doctype_meta_modifed_at",
+			"doctype_meta_modified_at",
 			modified_at,
 			update_modified=False,
 		)

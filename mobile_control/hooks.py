@@ -145,6 +145,15 @@ app_license = "mit"
 # 	}
 # }
 doc_events = {
+	# Mobile attachment relink — runs on every doc save site-wide; fast-
+	# exits in O(1) when the doc has no `mobile_uuid` (not a mobile-sync
+	# doctype). Walks the parent + child tables and rewires SDK-uploaded
+	# File rows (uploaded with dt=<doctype>, dn=NULL) to point at their
+	# real (doctype, name) once the parent INSERT/UPDATE commits.
+	"*": {
+		"on_update": "mobile_control.attachment_relink.relink_mobile_files",
+		"on_update_after_submit": "mobile_control.attachment_relink.relink_mobile_files",
+	},
 	"DocType": {
 		"on_update": "mobile_control.mobile_control.doctype.mobile_configuration.mobile_configuration.update_doctype_meta_modified",
 	},
@@ -162,7 +171,10 @@ doc_events = {
 # ---------------
 
 scheduler_events = {
-	"daily": ["mobile_control.tasks.cleanup_mobile_refresh_tokens"],
+	"daily": [
+		"mobile_control.tasks.cleanup_mobile_refresh_tokens",
+		"mobile_control.tasks.purge_mobile_error_logs",
+	],
 }
 
 # Testing
@@ -182,9 +194,14 @@ override_whitelisted_methods = {
 	"mobile_auth.app_status": "mobile_control.api.api_auth.get_mobile_app_status",
 	"mobile_auth.configuration": "mobile_control.api.api_auth.get_mobile_configuration",
 	"mobile_auth.permissions": "mobile_control.api.api_auth.get_user_permissions",
+	"mobile_auth.me": "mobile_control.api.api_auth.me",
 	"mobile_auth.get_translations": "mobile_control.api.api_auth.get_translations",
 	"mobile_auth.get_social_login_providers": "mobile_control.api.api_auth.get_social_login_providers",
 	"mobile_auth.get_social_authorize_url": "mobile_control.api.api_auth.get_social_authorize_url",
+	"mobile_sync.get_docs_with_children": "mobile_control.api.bulk_fetch.get_docs_with_children",
+	"mobile_sync.sync_details": "mobile_control.api.sync_details.get_sync_details",
+	"mobile_sync.get_translations": "mobile_control.api.translations.get_translations",
+	"mobile_sync.report_error": "mobile_control.api.error_log.report_error",
 }
 #
 # each overriding function accepts a `data` argument;
@@ -258,4 +275,22 @@ before_request = ["mobile_control.api.jwt_auth.token_auth_middleware"]
 
 # Fixtures
 # --------
-fixtures = [{"doctype": "Role", "filters": {"name": ["in", ["Mobile User"]]}}]
+fixtures = [
+	{"doctype": "Role", "filters": {"name": ["in", ["Mobile User"]]}},
+	# Grant the Mobile User role read on the core metadata doctypes the mobile
+	# SDK reads directly via /api/resource. Each row set REPLICATES the doctype's
+	# standard perms (override trap: any Custom DocPerm makes frappe ignore the
+	# built-in DocPerms) plus a Mobile User read row. The standard perms for these
+	# four are identical across v15/v16/v17, so the snapshot is version-safe.
+	# `DocType`/`DocField`/`DocPerm` are intentionally absent — Meta hardcodes them
+	# to ignore Custom DocPerm, so granting them this way is a silent no-op.
+	{
+		"doctype": "Custom DocPerm",
+		"filters": {
+			"parent": [
+				"in",
+				["Custom Field", "Property Setter", "Translation", "DocType Layout"],
+			]
+		},
+	},
+]

@@ -10,6 +10,12 @@ from frappe.twofactor import send_token_via_sms
 from frappe.utils import cint
 
 
+def _mask_phone(value: str) -> str:
+	if not value:
+		return value
+	return value[:3] + "XXXXXX" if len(value) > 3 else "X" * len(value)
+
+
 def is_mobile_otp_login_enabled() -> bool:
 	"""Return True if login via mobile number and OTP is enabled in system settings."""
 	return cint(frappe.get_system_settings("allow_login_using_mobile_number"))
@@ -72,8 +78,6 @@ def cache_mobile_otp_data(user: str, token: int, otp_secret: str, tmp_id: str) -
 
 def send_mobile_login_otp(user: str, mobile_no: str) -> dict[str, str]:
 	"""Validate settings, generate OTP, cache it, send via SMS (or hook). Returns message, tmp_id, masked mobile_no."""
-	from frappe.model.utils.mask import mask_field_value
-
 	validate_mobile_otp_prerequisites()
 
 	token, otp_secret = generate_mobile_otp(user)
@@ -94,5 +98,5 @@ def send_mobile_login_otp(user: str, mobile_no: str) -> dict[str, str]:
 	return {
 		"message": _("OTP sent successfully"),
 		"tmp_id": tmp_id,
-		"mobile_no": mask_field_value(frappe.get_meta("User").get_field("mobile_no"), mobile_no),
+		"mobile_no": _mask_phone(mobile_no),
 	}

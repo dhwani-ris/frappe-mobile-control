@@ -6,6 +6,7 @@
  "engine": "InnoDB",
  "field_order": [
   "enabled",
+  "offline_enabled",
   "app_details_section",
   "package_name",
   "column_break_pioi",
@@ -14,7 +15,8 @@
   "maintenance_mode",
   "maintenance_message",
   "forms_configuration_section",
-  "table_lwis"
+  "table_lwis",
+  "mobile_error_log_retention_days"
  ],
  "fields": [
   {
@@ -22,6 +24,13 @@
    "fieldname": "enabled",
    "fieldtype": "Check",
    "label": " Enabled"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.enabled",
+   "fieldname": "offline_enabled",
+   "fieldtype": "Check",
+   "label": "Offline Mode Enabled"
   },
   {
    "depends_on": "eval:doc.enabled",
@@ -71,6 +80,13 @@
    "fieldtype": "Data",
    "label": "Minimum App Version",
    "mandatory_depends_on": "eval:doc.enabled"
+  },
+  {
+   "default": "30",
+   "fieldname": "mobile_error_log_retention_days",
+   "fieldtype": "Int",
+   "label": "Mobile Error Log Retention (days)",
+   "description": "Mobile Error Log rows older than this are purged daily. 0 disables purging."
   }
  ],
  "grid_page_length": 50,
@@ -78,7 +94,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-03-30 19:40:16.325213",
+ "modified": "2026-06-03 18:51:18.432016",
  "modified_by": "Administrator",
  "module": "Mobile Control",
  "name": "Mobile Configuration",
