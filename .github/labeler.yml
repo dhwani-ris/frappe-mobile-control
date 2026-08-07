@@ -1,0 +1,52 @@
+# Path-based PR labels for actions/labeler@v5 (.github/workflows/labeller.yml)
+# Complements the title-based labels added by pr-labeler.yml and
+# label-base-on-title.yml — these are driven purely by changed files.
+
+backend:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'mobile_control/**/*.py'
+
+api:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'mobile_control/api/**'
+          - 'API/**'
+
+doctype:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'mobile_control/mobile_control/doctype/**'
+
+frontend:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'mobile_control/public/**'
+          - 'mobile_control/templates/**'
+          - '**/*.js'
+          - '**/*.css'
+
+docs:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.md'
+          - 'API/**/*.bru'
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/**'
+          - 'commitlint.config.js'
+
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'pyproject.toml'
+          - '**/requirements*.txt'
+          - '**/package.json'
+          - '**/*.lock'
+
+fixtures:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'mobile_control/fixtures/**'
