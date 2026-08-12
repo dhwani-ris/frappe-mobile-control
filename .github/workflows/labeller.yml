@@ -1,6 +1,11 @@
 name: "Pull Request Labeler"
 on:
-  pull_request_target:
+  # pull_request (not pull_request_target): the runner checks out the PR head,
+  # so .github/labeler.yml is read from the PR itself rather than the base
+  # branch. Also avoids handing a write-scoped token to a workflow triggered by
+  # untrusted code on a public repo. Trade-off: fork PRs get a read-only token
+  # and will not be labelled. Matches the trigger already used by pr-labeler.yml.
+  pull_request:
     types: [opened, reopened]
 
 jobs:
