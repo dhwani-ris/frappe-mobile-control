@@ -170,10 +170,13 @@ doc_events = {
 # Scheduled Tasks
 # ---------------
 
+after_request = ["mobile_control.api.helpers.client_log.touch_last_seen_after_request"]
+
 scheduler_events = {
 	"daily": [
 		"mobile_control.tasks.cleanup_mobile_refresh_tokens",
 		"mobile_control.tasks.purge_mobile_error_logs",
+		"mobile_control.tasks.cleanup_mobile_login_events",
 	],
 }
 

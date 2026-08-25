@@ -2,6 +2,8 @@ import frappe
 from frappe.utils import add_to_date
 from frappe.utils import now_datetime
 
+from mobile_control.api.helpers.client_log import purge_old_login_events
+
 
 def cleanup_mobile_refresh_tokens() -> None:
 	"""Delete revoked or expired mobile refresh tokens."""
@@ -42,3 +44,7 @@ def purge_mobile_error_logs() -> None:
 	if count:
 		frappe.db.delete("Mobile Error Log", {"last_seen": ("<", cutoff)})
 		frappe.logger("mobile_control").info("Purged %s Mobile Error Log rows", count)
+
+def cleanup_mobile_login_events() -> None:
+	"""Trim mobile login history past its retention window."""
+	purge_old_login_events()

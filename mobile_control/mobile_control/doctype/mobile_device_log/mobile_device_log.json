@@ -1,0 +1,176 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2026-08-25 10:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "user",
+  "device_id",
+  "app_name",
+  "app_version",
+  "build_number",
+  "column_break_device",
+  "platform",
+  "os_version",
+  "device_model",
+  "user_agent",
+  "section_break_activity",
+  "last_login",
+  "last_seen",
+  "first_seen",
+  "column_break_activity",
+  "login_count",
+  "last_ip",
+  "session_active",
+  "token_expires_at"
+ ],
+ "fields": [
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "User",
+   "options": "User",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "description": "Stable per-install identifier reported by the app.",
+   "fieldname": "device_id",
+   "fieldtype": "Data",
+   "label": "Device ID",
+   "search_index": 1
+  },
+  {
+   "fieldname": "app_name",
+   "fieldtype": "Data",
+   "label": "App Name"
+  },
+  {
+   "description": "Blank for app builds older than client-info reporting.",
+   "fieldname": "app_version",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "App Version"
+  },
+  {
+   "fieldname": "build_number",
+   "fieldtype": "Data",
+   "label": "Build Number"
+  },
+  {
+   "fieldname": "column_break_device",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "platform",
+   "fieldtype": "Data",
+   "in_standard_filter": 1,
+   "label": "Platform"
+  },
+  {
+   "fieldname": "os_version",
+   "fieldtype": "Data",
+   "label": "OS Version"
+  },
+  {
+   "fieldname": "device_model",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Device Model"
+  },
+  {
+   "fieldname": "user_agent",
+   "fieldtype": "Data",
+   "label": "User Agent"
+  },
+  {
+   "fieldname": "section_break_activity",
+   "fieldtype": "Section Break",
+   "label": "Activity"
+  },
+  {
+   "fieldname": "last_login",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Last Login"
+  },
+  {
+   "description": "Last authenticated request seen from this device.",
+   "fieldname": "last_seen",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Last Seen"
+  },
+  {
+   "fieldname": "first_seen",
+   "fieldtype": "Datetime",
+   "label": "First Seen"
+  },
+  {
+   "fieldname": "column_break_activity",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "login_count",
+   "fieldtype": "Int",
+   "label": "Login Count"
+  },
+  {
+   "fieldname": "last_ip",
+   "fieldtype": "Data",
+   "label": "Last IP"
+  },
+  {
+   "default": "0",
+   "description": "A refresh token for this device is still valid.",
+   "fieldname": "session_active",
+   "fieldtype": "Check",
+   "label": "Session Active"
+  },
+  {
+   "fieldname": "token_expires_at",
+   "fieldtype": "Datetime",
+   "label": "Token Expires At"
+  }
+ ],
+ "grid_page_length": 50,
+ "hide_toolbar": 1,
+ "in_create": 1,
+ "index_web_pages_for_search": 0,
+ "links": [
+  {
+   "group": "Activity",
+   "link_doctype": "Mobile Login Event",
+   "link_fieldname": "device_log"
+  }
+ ],
+ "modified": "2026-08-25 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Mobile Control",
+ "name": "Mobile Device Log",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "last_seen",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "user",
+ "track_changes": 0
+}
