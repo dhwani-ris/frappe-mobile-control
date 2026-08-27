@@ -5,6 +5,7 @@ from unittest.mock import patch
 import frappe
 from frappe.tests import IntegrationTestCase
 from frappe.utils import add_days
+from frappe.utils import get_datetime
 from frappe.utils import now_datetime
 from frappe.tests import UnitTestCase
 
@@ -214,6 +215,41 @@ class TestRecordClientEvent(IntegrationTestCase):
 			"Mobile Login Event", filters={"user": "Administrator"}, fields=["event"]
 		)
 		self.assertEqual([r["event"] for r in remaining], ["Token Refresh"])
+
+	def test_login_captures_user_details_from_the_user_record(self) -> None:
+		"""The list should read as a person, not just an email address."""
+		self._record("Login")
+
+		row = frappe.db.get_value(
+			"Mobile Device Log",
+			{"user": "Administrator", "device_id": "device-under-test"},
+			["user_full_name", "user_enabled", "user_type", "account_last_login"],
+			as_dict=True,
+		)
+		expected = frappe.db.get_value(
+			"User", "Administrator", ["full_name", "enabled", "user_type", "last_login"], as_dict=True
+		)
+		self.assertEqual(row["user_full_name"], expected["full_name"])
+		self.assertEqual(row["user_enabled"], expected["enabled"])
+		self.assertEqual(row["user_type"], expected["user_type"])
+		# User.last_login is a Data field on User but a Datetime column here — compare as datetimes.
+		self.assertEqual(row["account_last_login"], get_datetime(expected["last_login"]))
+
+	def test_user_details_refresh_on_a_later_event(self) -> None:
+		"""Values are as-of-last-activity, so a rename must land on the next event."""
+		self._record("Login")
+		frappe.db.set_value("User", "Administrator", "full_name", "Renamed Admin", update_modified=False)
+
+		self._record("Token Refresh")
+
+		self.assertEqual(
+			frappe.db.get_value(
+				"Mobile Device Log",
+				{"user": "Administrator", "device_id": "device-under-test"},
+				"user_full_name",
+			),
+			"Renamed Admin",
+		)
 
 
 class TestTouchLastSeen(IntegrationTestCase):

@@ -15,6 +15,15 @@
   "os_version",
   "device_model",
   "user_agent",
+  "section_break_user",
+  "user_full_name",
+  "user_enabled",
+  "user_type",
+  "column_break_user",
+  "user_mobile_no",
+  "user_phone",
+  "account_last_login",
+  "account_last_active",
   "section_break_activity",
   "last_login",
   "last_seen",
@@ -86,6 +95,62 @@
    "fieldname": "user_agent",
    "fieldtype": "Data",
    "label": "User Agent"
+  },
+  {
+   "fieldname": "section_break_user",
+   "fieldtype": "Section Break",
+   "label": "User"
+  },
+  {
+   "fieldname": "user_full_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Full Name",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "As of this user's last app activity, not live.",
+   "fieldname": "user_enabled",
+   "fieldtype": "Check",
+   "in_standard_filter": 1,
+   "label": "Enabled",
+   "read_only": 1
+  },
+  {
+   "fieldname": "user_type",
+   "fieldtype": "Data",
+   "label": "User Type",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_user",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "user_mobile_no",
+   "fieldtype": "Data",
+   "label": "Mobile No",
+   "read_only": 1
+  },
+  {
+   "fieldname": "user_phone",
+   "fieldtype": "Data",
+   "label": "Phone",
+   "read_only": 1
+  },
+  {
+   "description": "Frappe's own User.last_login \u2014 counts desk and mobile logins.",
+   "fieldname": "account_last_login",
+   "fieldtype": "Datetime",
+   "label": "Last Login (All Surfaces)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "account_last_active",
+   "fieldtype": "Datetime",
+   "label": "Last Active (All Surfaces)",
+   "read_only": 1
   },
   {
    "fieldname": "section_break_activity",

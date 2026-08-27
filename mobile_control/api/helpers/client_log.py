@@ -99,6 +99,23 @@ DEVICE_PROFILE_FIELDS = (
 )
 
 
+USER_SNAPSHOT_FIELDS = {
+	"full_name": "user_full_name",
+	"enabled": "user_enabled",
+	"user_type": "user_type",
+	"mobile_no": "user_mobile_no",
+	"phone": "user_phone",
+	"last_login": "account_last_login",
+	"last_active": "account_last_active",
+}
+
+
+def _user_snapshot(user: str) -> dict[str, Any]:
+	"""Copy the user's own details onto the row, as of this event."""
+	values = frappe.db.get_value("User", user, list(USER_SNAPSHOT_FIELDS), as_dict=True) or {}
+	return {target: values.get(source) for source, target in USER_SNAPSHOT_FIELDS.items()}
+
+
 def _find_device_log(user: str, device_id: str | None) -> str | None:
 	"""Locate this user's row for the device, falling back to the device they were last seen on."""
 	if device_id:
@@ -116,6 +133,7 @@ def _upsert_device_log(user: str, info: dict[str, Any], event: str, now: Any) ->
 	device_id = info.get("device_id")
 	# Keep what an earlier request already told us — a blank field means "not reported", not "cleared".
 	values = {field: info.get(field) for field in DEVICE_PROFILE_FIELDS if info.get(field)}
+	values.update(_user_snapshot(user))
 	values["last_seen"] = now
 	values["last_ip"] = _safe_read(lambda: frappe.local.request_ip, None)
 	if event == EVENT_LOGIN:
