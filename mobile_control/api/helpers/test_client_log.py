@@ -57,6 +57,33 @@ class TestParseClientInfo(UnitTestCase):
 		self.assertEqual(info["app_version"], "2.9.0")
 		self.assertIsNone(info["device_model"])
 
+	def test_caps_legacy_values_too_not_just_header_values(self) -> None:
+		"""A long User-Agent would blow the varchar(140) insert and drop the user from the log."""
+		with (
+			patch("mobile_control.api.helpers.client_log.get_request_header", return_value=None),
+			patch(
+				"mobile_control.api.helpers.client_log.get_request_metadata",
+				return_value=("d" * 300, "u" * 300),
+			),
+		):
+			info = client_log.parse_client_info()
+
+		self.assertEqual(len(info["device_id"]), 140)
+		self.assertEqual(len(info["user_agent"]), 140)
+
+	def test_coerces_a_non_string_device_id_to_text(self) -> None:
+		"""form_dict values come from the request body and need not be strings."""
+		with (
+			patch("mobile_control.api.helpers.client_log.get_request_header", return_value=None),
+			patch(
+				"mobile_control.api.helpers.client_log.get_request_metadata",
+				return_value=(["like", "%"], None),
+			),
+		):
+			info = client_log.parse_client_info()
+
+		self.assertIsInstance(info["device_id"], str)
+
 	def test_returns_defaults_when_no_request_is_bound(self) -> None:
 		"""Never raise at the caller — login must not fail because telemetry could not read a header."""
 		info = client_log.parse_client_info()
@@ -156,6 +183,19 @@ class TestRecordClientEvent(IntegrationTestCase):
 
 		self.assertIsNone(result)
 
+	def test_survives_a_failure_inside_its_own_error_logging(self) -> None:
+		"""log_error inserts a document; if that insert also fails, login must still succeed."""
+		with (
+			patch(
+				"mobile_control.api.helpers.client_log._upsert_device_log",
+				side_effect=Exception("db is on fire"),
+			),
+			patch("frappe.log_error", side_effect=Exception("error log is on fire too")),
+		):
+			result = client_log.record_client_event("Login", user="Administrator")
+
+		self.assertIsNone(result)
+
 	def test_login_marks_session_active_with_refresh_token_expiry(self) -> None:
 		self._record("Login")
 
@@ -196,6 +236,70 @@ class TestRecordClientEvent(IntegrationTestCase):
 		self.assertEqual(rows[0]["device_id"], "device-under-test")
 		self.assertEqual(rows[0]["device_model"], "Redmi Note 12")
 		self.assertEqual(rows[0]["session_active"], 0)
+
+	def test_blank_account_timestamps_do_not_break_the_write(self) -> None:
+		"""User.last_login is a varchar on User but a Datetime column here."""
+		original = frappe.db.get_value("User", "Administrator", "last_login")
+		self.addCleanup(
+			frappe.db.set_value, "User", "Administrator", "last_login", original, update_modified=False
+		)
+		frappe.db.set_value("User", "Administrator", "last_login", "", update_modified=False)
+
+		self._record("Login")
+
+		self.assertIsNone(
+			frappe.db.get_value(
+				"Mobile Device Log",
+				{"user": "Administrator", "device_id": "device-under-test"},
+				"account_last_login",
+			)
+		)
+
+	def test_a_missing_user_row_does_not_wipe_captured_details(self) -> None:
+		self._record("Login")
+		with patch("frappe.db.get_value", return_value=None):
+			snapshot = client_log._user_snapshot("ghost@example.com")
+
+		self.assertEqual(snapshot, {})
+
+	def test_does_not_guess_a_device_when_the_user_has_several(self) -> None:
+		"""A legacy logout must not close the session on a phone it did not come from."""
+		self._record("Login")
+		self._record("Login", {**SAMPLE_INFO, "device_id": "second-device", "device_model": "Other Phone"})
+
+		self._record("Logout", {**SAMPLE_INFO, "device_id": None, "device_model": None})
+
+		rows = frappe.get_all(
+			"Mobile Device Log",
+			filters={"user": "Administrator"},
+			fields=["device_id", "session_active"],
+		)
+		self.assertEqual(len(rows), 2, "no third row may be invented")
+		self.assertEqual(
+			{r["session_active"] for r in rows}, {1}, "neither device may be closed on a guess"
+		)
+		# The event itself is still recorded, just not attributed to a device.
+		logouts = frappe.get_all(
+			"Mobile Login Event", filters={"user": "Administrator", "event": "Logout"}, fields=["device_log"]
+		)
+		self.assertEqual(len(logouts), 1)
+		self.assertIsNone(logouts[0]["device_log"])
+
+	def test_a_racing_insert_does_not_produce_a_duplicate_row(self) -> None:
+		"""Two simultaneous logins both see no row; the loser must update, not insert again."""
+		self._record("Login")
+
+		# Simulate the race: the lookup misses even though the row already exists.
+		with patch("mobile_control.api.helpers.client_log._find_device_log", return_value=None):
+			self._record("Login")
+
+		rows = frappe.get_all(
+			"Mobile Device Log",
+			filters={"user": "Administrator", "device_id": "device-under-test"},
+			fields=["name", "login_count"],
+		)
+		self.assertEqual(len(rows), 1)
+		self.assertEqual(rows[0]["login_count"], 2)
 
 	def test_purge_removes_events_past_the_retention_window(self) -> None:
 		self._record("Login")
@@ -238,6 +342,10 @@ class TestRecordClientEvent(IntegrationTestCase):
 	def test_user_details_refresh_on_a_later_event(self) -> None:
 		"""Values are as-of-last-activity, so a rename must land on the next event."""
 		self._record("Login")
+		original = frappe.db.get_value("User", "Administrator", "full_name")
+		self.addCleanup(
+			frappe.db.set_value, "User", "Administrator", "full_name", original, update_modified=False
+		)
 		frappe.db.set_value("User", "Administrator", "full_name", "Renamed Admin", update_modified=False)
 
 		self._record("Token Refresh")
@@ -257,17 +365,18 @@ class TestTouchLastSeen(IntegrationTestCase):
 
 	def setUp(self) -> None:
 		frappe.db.delete("Mobile Device Log", {"user": "Administrator"})
-		frappe.cache.delete_value(client_log.last_seen_cache_key("Administrator"))
-		frappe.local.flags.is_mobile_client = True
+		for device in (None, "device-under-test", "second-device"):
+			frappe.cache.delete_value(client_log.last_seen_cache_key("Administrator", device))
 
 	def tearDown(self) -> None:
 		frappe.local.flags.is_mobile_client = False
-		frappe.cache.delete_value(client_log.last_seen_cache_key("Administrator"))
+		for device in (None, "device-under-test", "second-device"):
+			frappe.cache.delete_value(client_log.last_seen_cache_key("Administrator", device))
 
-	def _seed_stale_device(self) -> str:
+	def _seed_stale_device(self, device_id: str = "device-under-test") -> str:
 		doc = frappe.new_doc("Mobile Device Log")
 		doc.user = "Administrator"
-		doc.device_id = "device-under-test"
+		doc.device_id = device_id
 		doc.last_seen = add_days(now_datetime(), -3)
 		doc.insert(ignore_permissions=True)
 		return doc.name
@@ -297,3 +406,53 @@ class TestTouchLastSeen(IntegrationTestCase):
 		client_log.touch_last_seen()
 
 		self.assertEqual(frappe.db.count("Mobile Device Log", {"user": "Administrator"}), 0)
+
+
+	def test_throttle_is_per_device_not_per_user(self) -> None:
+		"""Two phones must each get their own last_seen refresh."""
+		first = self._seed_stale_device()
+		second = self._seed_stale_device(device_id="second-device")
+
+		for device in ("device-under-test", "second-device"):
+			with patch(
+				"mobile_control.api.helpers.client_log.parse_client_info",
+				return_value={**SAMPLE_INFO, "device_id": device},
+			):
+				client_log.touch_last_seen()
+
+		self.assertLess(self._age_seconds(first), 120)
+		self.assertLess(self._age_seconds(second), 120)
+
+	def test_hook_ignores_requests_that_are_not_from_the_mobile_app(self) -> None:
+		name = self._seed_stale_device()
+		frappe.local.flags.is_mobile_client = False
+
+		with patch("frappe.db.commit") as commit:
+			client_log.touch_last_seen_after_request()
+
+		commit.assert_not_called()
+		self.assertGreater(self._age_seconds(name), 3600)
+
+	def test_hook_commits_its_own_write(self) -> None:
+		"""Frappe commits before after_request runs, so the hook must commit itself."""
+		self._seed_stale_device()
+		frappe.local.flags.is_mobile_client = True
+
+		with (
+			patch(
+				"mobile_control.api.helpers.client_log.parse_client_info",
+				return_value={**SAMPLE_INFO, "device_id": "device-under-test"},
+			),
+			patch("frappe.db.commit") as commit,
+		):
+			client_log.touch_last_seen_after_request()
+
+		commit.assert_called_once()
+
+	def test_hook_swallows_failures(self) -> None:
+		frappe.local.flags.is_mobile_client = True
+		with patch(
+			"mobile_control.api.helpers.client_log.touch_last_seen",
+			side_effect=Exception("boom"),
+		):
+			client_log.touch_last_seen_after_request()

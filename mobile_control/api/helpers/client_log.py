@@ -10,7 +10,11 @@ from typing import Any
 import frappe
 from frappe import get_request_header
 from frappe.utils import add_days
+from frappe.utils import cstr
+from frappe.utils import get_datetime
 from frappe.utils import now_datetime
+
+from mobile_control.mobile_control.doctype.mobile_device_log.mobile_device_log import device_log_name
 
 from .constants import REFRESH_TOKEN_TTL_DAYS
 from .response_builder import get_request_metadata
@@ -59,6 +63,13 @@ def _safe_read(read: Callable[[], Any], default: Any) -> Any:
 		return default
 
 
+def _clip(value: Any) -> str | None:
+	"""Every value lands in a varchar(140) column and clients control most of them."""
+	if value is None:
+		return None
+	return cstr(value)[:MAX_DATA_LENGTH] or None
+
+
 def parse_client_info() -> dict[str, Any]:
 	"""Parse the X-Client-Info request header into client metadata fields."""
 	info = dict.fromkeys(CLIENT_INFO_FIELDS)
@@ -69,23 +80,22 @@ def parse_client_info() -> dict[str, Any]:
 	info["user_agent"] = user_agent
 
 	header = _safe_read(lambda: get_request_header(CLIENT_INFO_HEADER), None)
-	if not header:
-		return info
+	if header:
+		for part in header.split(";"):
+			key, sep, value = part.partition("=")
+			if not sep:
+				continue
+			field = HEADER_KEY_MAP.get(key.strip().lower())
+			if field:
+				info[field] = value.strip()
 
-	for part in header.split(";"):
-		key, sep, value = part.partition("=")
-		if not sep:
-			continue
-		field = HEADER_KEY_MAP.get(key.strip().lower())
-		if field:
-			info[field] = value.strip()[:MAX_DATA_LENGTH]
+		# "ver" arrives as pubspec-style "2.9.0+72" — split into version and build.
+		version = info.get("app_version")
+		if version and "+" in version:
+			info["app_version"], _sep, info["build_number"] = version.partition("+")
 
-	# "ver" arrives as pubspec-style "2.9.0+72" — split into version and build.
-	version = info.get("app_version")
-	if version and "+" in version:
-		info["app_version"], _sep, info["build_number"] = version.partition("+")
-
-	return info
+	# One clip for every value, header or legacy — two separate caps is how the gap appeared.
+	return {field: _clip(value) for field, value in info.items()}
 
 
 DEVICE_PROFILE_FIELDS = (
@@ -110,25 +120,46 @@ USER_SNAPSHOT_FIELDS = {
 }
 
 
+# These are varchar on User but Datetime columns here, and set_value does not coerce.
+DATETIME_SNAPSHOT_FIELDS = ("account_last_login", "account_last_active")
+
+
 def _user_snapshot(user: str) -> dict[str, Any]:
 	"""Copy the user's own details onto the row, as of this event."""
-	values = frappe.db.get_value("User", user, list(USER_SNAPSHOT_FIELDS), as_dict=True) or {}
-	return {target: values.get(source) for source, target in USER_SNAPSHOT_FIELDS.items()}
+	values = frappe.db.get_value("User", user, list(USER_SNAPSHOT_FIELDS), as_dict=True)
+	if not values:
+		# No user row to read — leave whatever an earlier event captured rather than wiping it.
+		return {}
+
+	snapshot = {target: values.get(source) for source, target in USER_SNAPSHOT_FIELDS.items()}
+	for field in DATETIME_SNAPSHOT_FIELDS:
+		snapshot[field] = get_datetime(snapshot[field]) if snapshot[field] else None
+	return snapshot
 
 
 def _find_device_log(user: str, device_id: str | None) -> str | None:
-	"""Locate this user's row for the device, falling back to the device they were last seen on."""
+	"""Locate this user's row for the device this request came from."""
 	if device_id:
 		return frappe.db.get_value("Mobile Device Log", {"user": user, "device_id": device_id}, "name")
 
-	# Logout and legacy builds send no device identity — never strand them in a blank row.
-	rows = frappe.get_all(
-		"Mobile Device Log", filters={"user": user}, fields=["name"], order_by="last_seen desc", limit=1
-	)
-	return rows[0]["name"] if rows else None
+	# Logout and pre-header builds carry no device identity. One row is unambiguous; with
+	# several, guessing would close the session on a phone the request never came from.
+	rows = frappe.get_all("Mobile Device Log", filters={"user": user}, fields=["name"], limit=2)
+	return rows[0]["name"] if len(rows) == 1 else None
 
 
-def _upsert_device_log(user: str, info: dict[str, Any], event: str, now: Any) -> str:
+def _apply_to_device_log(name: str, values: dict[str, Any], event: str) -> None:
+	"""Write this event onto an existing device row."""
+	frappe.db.set_value("Mobile Device Log", name, values)
+	if event == EVENT_LOGIN:
+		# Atomic: a read-then-write would lose a count when two logins overlap.
+		frappe.db.sql(
+			"update `tabMobile Device Log` set login_count = ifnull(login_count, 0) + 1 where name = %s",
+			name,
+		)
+
+
+def _upsert_device_log(user: str, info: dict[str, Any], event: str, now: Any) -> str | None:
 	"""Create or refresh the single Mobile Device Log row for this user + device."""
 	device_id = info.get("device_id")
 	# Keep what an earlier request already told us — a blank field means "not reported", not "cleared".
@@ -149,23 +180,30 @@ def _upsert_device_log(user: str, info: dict[str, Any], event: str, now: Any) ->
 
 	existing = _find_device_log(user, device_id)
 	if existing:
-		if event == EVENT_LOGIN:
-			current = frappe.db.get_value("Mobile Device Log", existing, "login_count") or 0
-			values["login_count"] = current + 1
-		frappe.db.set_value("Mobile Device Log", existing, values)
+		_apply_to_device_log(existing, values, event)
 		return existing
 
+	if not device_id and frappe.db.exists("Mobile Device Log", {"user": user}):
+		# Several devices and nothing identifying this one — record the event, touch no row.
+		return None
+
+	name = device_log_name(user, device_id)
 	doc = frappe.new_doc("Mobile Device Log")
 	doc.update(values)
+	doc.name = name
 	doc.user = user
 	doc.device_id = device_id
 	doc.first_seen = now
 	doc.login_count = 1 if event == EVENT_LOGIN else 0
-	doc.insert(ignore_permissions=True)
-	return doc.name
+	try:
+		doc.insert(ignore_permissions=True)
+	except frappe.DuplicateEntryError:
+		# Lost the race: the row exists now, so fold this event into it.
+		_apply_to_device_log(name, values, event)
+	return name
 
 
-def _insert_login_event(user: str, info: dict[str, Any], event: str, device_log: str, now: Any) -> None:
+def _insert_login_event(user: str, info: dict[str, Any], event: str, device_log: str | None, now: Any) -> None:
 	"""Append one immutable row to the login history."""
 	doc = frappe.new_doc("Mobile Login Event")
 	doc.user = user
@@ -188,7 +226,11 @@ def record_client_event(event: str, user: str | None = None) -> str | None:
 		_insert_login_event(user, info, event, device_log, now)
 		return device_log
 	except Exception:
-		frappe.log_error(title="Mobile Client Log Error", message=frappe.get_traceback())
+		# log_error inserts a document, so it fails too when the DB is what broke.
+		try:
+			frappe.log_error(title="Mobile Client Log Error", message=frappe.get_traceback())
+		except Exception:
+			pass
 		return None
 
 
@@ -198,8 +240,9 @@ def purge_old_login_events() -> None:
 	frappe.db.delete("Mobile Login Event", {"event_time": ("<", cutoff)})
 
 
-def last_seen_cache_key(user: str) -> str:
-	return f"mobile_last_seen:{user}"
+def last_seen_cache_key(user: str, device_id: str | None) -> str:
+	"""Per device, not per user — otherwise a second phone never gets its last_seen refreshed."""
+	return f"mobile_last_seen:{user}:{device_id or ''}"
 
 
 def touch_last_seen(user: str | None = None) -> bool:
@@ -208,11 +251,12 @@ def touch_last_seen(user: str | None = None) -> bool:
 	if not user or user == "Guest":
 		return False
 
-	cache_key = last_seen_cache_key(user)
+	device_id = parse_client_info().get("device_id")
+	cache_key = last_seen_cache_key(user, device_id)
 	if frappe.cache.get_value(cache_key):
 		return False
 
-	device_log = _find_device_log(user, parse_client_info().get("device_id"))
+	device_log = _find_device_log(user, device_id)
 	if not device_log:
 		return False
 

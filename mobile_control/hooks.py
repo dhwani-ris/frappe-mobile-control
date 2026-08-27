@@ -170,8 +170,6 @@ doc_events = {
 # Scheduled Tasks
 # ---------------
 
-after_request = ["mobile_control.api.helpers.client_log.touch_last_seen_after_request"]
-
 scheduler_events = {
 	"daily": [
 		"mobile_control.tasks.cleanup_mobile_refresh_tokens",
@@ -226,7 +224,7 @@ override_whitelisted_methods = {
 # Request Events
 # ----------------
 before_request = ["mobile_control.api.jwt_auth.token_auth_middleware"]
-# after_request = ["mobile_control.utils.after_request"]
+after_request = ["mobile_control.api.helpers.client_log.touch_last_seen_after_request"]
 
 # Job Events
 # ----------
