@@ -98,6 +98,17 @@ def parse_client_info() -> dict[str, Any]:
 	return {field: _clip(value) for field, value in info.items()}
 
 
+LOGIN_EVENT_FIELDS = (
+	"device_id",
+	"app_version",
+	"build_number",
+	"platform",
+	"os_version",
+	"device_model",
+	"user_agent",
+)
+
+
 DEVICE_PROFILE_FIELDS = (
 	"app_name",
 	"app_version",
@@ -203,7 +214,9 @@ def _upsert_device_log(user: str, info: dict[str, Any], event: str, now: Any) ->
 	return name
 
 
-def _insert_login_event(user: str, info: dict[str, Any], event: str, device_log: str | None, now: Any) -> None:
+def _insert_login_event(
+	user: str, info: dict[str, Any], event: str, device_log: str | None, now: Any
+) -> None:
 	"""Append one immutable row to the login history."""
 	doc = frappe.new_doc("Mobile Login Event")
 	doc.user = user
@@ -211,7 +224,7 @@ def _insert_login_event(user: str, info: dict[str, Any], event: str, device_log:
 	doc.event_time = now
 	doc.device_log = device_log
 	doc.ip_address = _safe_read(lambda: frappe.local.request_ip, None)
-	for field in ("device_id", "app_version", "build_number", "platform", "os_version", "device_model", "user_agent"):
+	for field in LOGIN_EVENT_FIELDS:
 		doc.set(field, info.get(field))
 	doc.insert(ignore_permissions=True)
 
