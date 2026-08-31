@@ -13,7 +13,6 @@ from frappe.utils import add_days
 from frappe.utils import cstr
 from frappe.utils import get_datetime
 from frappe.utils import now_datetime
-
 from mobile_control.mobile_control.doctype.mobile_device_log.mobile_device_log import device_log_name
 
 from .constants import REFRESH_TOKEN_TTL_DAYS

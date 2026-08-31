@@ -4,11 +4,10 @@ from unittest.mock import patch
 
 import frappe
 from frappe.tests import IntegrationTestCase
+from frappe.tests import UnitTestCase
 from frappe.utils import add_days
 from frappe.utils import get_datetime
 from frappe.utils import now_datetime
-from frappe.tests import UnitTestCase
-
 from mobile_control.api.helpers import client_log
 from mobile_control.api.helpers.constants import REFRESH_TOKEN_TTL_DAYS
 
@@ -275,9 +274,7 @@ class TestRecordClientEvent(IntegrationTestCase):
 			fields=["device_id", "session_active"],
 		)
 		self.assertEqual(len(rows), 2, "no third row may be invented")
-		self.assertEqual(
-			{r["session_active"] for r in rows}, {1}, "neither device may be closed on a guess"
-		)
+		self.assertEqual({r["session_active"] for r in rows}, {1}, "neither device may be closed on a guess")
 		# The event itself is still recorded, just not attributed to a device.
 		logouts = frappe.get_all(
 			"Mobile Login Event", filters={"user": "Administrator", "event": "Logout"}, fields=["device_log"]
@@ -315,9 +312,7 @@ class TestRecordClientEvent(IntegrationTestCase):
 
 		client_log.purge_old_login_events()
 
-		remaining = frappe.get_all(
-			"Mobile Login Event", filters={"user": "Administrator"}, fields=["event"]
-		)
+		remaining = frappe.get_all("Mobile Login Event", filters={"user": "Administrator"}, fields=["event"])
 		self.assertEqual([r["event"] for r in remaining], ["Token Refresh"])
 
 	def test_login_captures_user_details_from_the_user_record(self) -> None:
@@ -406,7 +401,6 @@ class TestTouchLastSeen(IntegrationTestCase):
 		client_log.touch_last_seen()
 
 		self.assertEqual(frappe.db.count("Mobile Device Log", {"user": "Administrator"}), 0)
-
 
 	def test_throttle_is_per_device_not_per_user(self) -> None:
 		"""Two phones must each get their own last_seen refresh."""
