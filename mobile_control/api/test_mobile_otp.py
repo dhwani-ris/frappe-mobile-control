@@ -130,7 +130,11 @@ class TestMobileOtpLogin(IntegrationTestCase):
 
 	@staticmethod
 	def _cache_str(key: str) -> str | None:
-		value = frappe.cache.get(key)
+		# Must read back with the same raw, non-namespaced API
+		# cache_mobile_otp_data() writes with (frappe.cache.pipeline().set(...)),
+		# matching the existing nosemgrep precedent for this same OTP cache
+		# contract in helpers/custom_login_manager.py.
+		value = frappe.cache.get(key)  # nosemgrep
 		if isinstance(value, bytes):
 			value = value.decode("utf-8")
 		return value
