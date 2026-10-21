@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 import frappe
 import pyotp
+from frappe.auth import CookieManager
 from frappe.tests import IntegrationTestCase
 from werkzeug.test import EnvironBuilder
 from werkzeug.wrappers import Request
@@ -181,6 +182,16 @@ class TestMobileOtpLogin(IntegrationTestCase):
 		builder = EnvironBuilder(method="POST", path="/api/method/mobile_auth.verify_login_otp")
 		frappe.local.request = Request(builder.get_environ())
 
+		# LoginManager.set_user_info() (reached on every authenticate_with_otp()
+		# call, success or rejection) unconditionally calls
+		# frappe.local.cookie_manager.init_cookies(). Outside the real WSGI
+		# entrypoint nothing ever sets that attribute, so it would raise
+		# AttributeError before any assertion in this test runs.
+		self._had_cookie_manager = hasattr(frappe.local, "cookie_manager")
+		if self._had_cookie_manager:
+			self._prior_cookie_manager = frappe.local.cookie_manager
+		frappe.local.cookie_manager = CookieManager()
+
 		# That request also switches the @rate_limit decorator ON: it is skipped
 		# only while frappe.request is falsy. It then builds its redis key as
 		# ":".join([frappe.local.request_ip, ...]), and frappe.init() leaves
@@ -197,6 +208,10 @@ class TestMobileOtpLogin(IntegrationTestCase):
 		self._reset_response()
 		frappe.local.request = None
 		frappe.local.request_ip = self._prior_request_ip
+		if self._had_cookie_manager:
+			frappe.local.cookie_manager = self._prior_cookie_manager
+		else:
+			del frappe.local.cookie_manager
 
 		# authenticate_with_otp() stamps otp/tmp_id onto the shared form_dict and
 		# never clears them; left behind, a later test's plain
