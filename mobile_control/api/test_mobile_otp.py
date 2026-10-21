@@ -156,11 +156,16 @@ class TestMobileOtpLogin(IntegrationTestCase):
 		sms_settings.sms_gateway_url = cls._prior_sms_gateway_url
 		sms_settings.save(ignore_permissions=True)
 
-		# LoginManager.fail() commits, so by the time this runs some of the
-		# suite's writes are already on disk and the per-test rollback cannot
-		# take them back. Commit the restored values too, or the site keeps
-		# whatever the last test happened to leave behind.
-		frappe.db.commit()
+		# Manual commit is required here, and only here. LoginManager.fail()
+		# commits, and the invalid-OTP and unknown-tmp_id tests both reach it,
+		# so this class's System Settings and SMS Settings writes are already
+		# on disk by now and no rollback can take them back. The restore above
+		# cannot rely on one either: IntegrationTestCase registers _rollback_db
+		# as a *class* cleanup, which runs after tearDownClass, so leaving the
+		# restore uncommitted just rolls the restore itself back and strands
+		# the site with this suite's values — OTP login left enabled against a
+		# fake SMS gateway URL.
+		frappe.db.commit()  # nosemgrep: frappe-semgrep-rules.rules.frappe-manual-commit
 		super().tearDownClass()
 
 	def setUp(self) -> None:
