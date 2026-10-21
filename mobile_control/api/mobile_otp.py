@@ -76,6 +76,27 @@ def cache_mobile_otp_data(user: str, token: int, otp_secret: str, tmp_id: str) -
 	pipeline.execute()
 
 
+def dispatch_via_custom_sms_provider(method: str, otp_secret: str, token: int, mobile_no: str) -> bool:
+	"""Send the OTP through a `mobile_otp_sms_sender` hook, reporting failure as False.
+
+	A hooked provider is third-party code: it can raise, and its dotted path can
+	go stale and stop resolving. Either way the caller should see the same
+	"could not send" result that a provider simply returning False already
+	produces, so one failure maps to one status instead of a raising provider
+	escaping to the endpoint's generic handler and reporting a malformed
+	request. `frappe.get_attr` is inside the try so an unresolvable path is
+	caught as well, and the log entry names the provider that broke.
+	"""
+	try:
+		return bool(frappe.get_attr(method)(otp_secret, token=token, phone_no=mobile_no))
+	except Exception:
+		frappe.log_error(
+			title="Mobile OTP SMS Provider Error",
+			message=f"Provider: {method}\n\n{frappe.get_traceback(with_context=True)}",
+		)
+		return False
+
+
 def send_mobile_login_otp(user: str, mobile_no: str) -> dict[str, str]:
 	"""Validate settings, generate OTP, cache it, send via SMS (or hook). Returns message, tmp_id, masked mobile_no."""
 	validate_mobile_otp_prerequisites()
@@ -88,7 +109,8 @@ def send_mobile_login_otp(user: str, mobile_no: str) -> dict[str, str]:
 
 	hook_methods = frappe.get_hooks("mobile_otp_sms_sender")
 	if hook_methods:
-		status = frappe.get_attr(hook_methods[-1])(otp_secret, token=token, phone_no=mobile_no)
+		# Last hook wins, matching how Frappe's own overridable hooks resolve.
+		status = dispatch_via_custom_sms_provider(hook_methods[-1], otp_secret, token, mobile_no)
 	else:
 		status = send_token_via_sms(otp_secret, token=token, phone_no=mobile_no)
 
