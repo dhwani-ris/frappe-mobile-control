@@ -293,12 +293,32 @@ def verify_mobile_otp(tmp_id: str, otp: str) -> None:
 		if not tmp_id or not otp:
 			frappe.throw(_("OTP and temporary ID are required"), frappe.ValidationError)
 
+		# `authenticate_with_otp` calls `post_login()`, so a real Frappe session
+		# exists from here on — including for a user `validate_mobile_user_role`
+		# is about to reject. Everything that follows runs inside a try/finally
+		# so that session is torn down on every exit path; previously `logout()`
+		# was only reached on success, leaving a rejected user with a live
+		# session that survived until it expired on its own. The binding stays
+		# outside the try: if authentication itself failed there is no
+		# `login_manager` to log out.
 		login_manager = authenticate_with_otp(otp, tmp_id)
-		validate_mobile_user_role()
-		user_doc, access_token = generate_user_token(login_manager)
-		device_id, user_agent = get_request_metadata()
-		refresh_token = create_refresh_token(user_doc, device_id=device_id, user_agent=user_agent)
-		login_manager.logout()
+		try:
+			validate_mobile_user_role()
+			user_doc, access_token = generate_user_token(login_manager)
+			device_id, user_agent = get_request_metadata()
+			refresh_token = create_refresh_token(user_doc, device_id=device_id, user_agent=user_agent)
+		finally:
+			# `LoginManager.logout()` runs `on_logout` hooks from every installed
+			# app, i.e. third-party code that may raise. An exception escaping a
+			# `finally` replaces the exception being propagated, which would turn
+			# the role rejection's 403 into a generic 417 — so log and move on.
+			try:
+				login_manager.logout()
+			except Exception:
+				frappe.log_error(
+					title="Mobile OTP Verify Logout Error",
+					message=frappe.get_traceback(with_context=True),
+				)
 
 		clear_login_response()
 
