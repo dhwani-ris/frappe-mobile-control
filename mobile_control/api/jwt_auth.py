@@ -126,6 +126,8 @@ def token_auth_middleware() -> None:
 
 		api_key, api_secret = decode_api_credentials(encrypted_token)
 		_convert_to_frappe_auth(api_key, api_secret)
+		# Marks the request as coming from the mobile app for the last_seen after_request hook.
+		frappe.local.flags.is_mobile_client = True
 	except frappe.AuthenticationError as e:
 		frappe.clear_messages()
 		frappe.throw(str(e), frappe.AuthenticationError)

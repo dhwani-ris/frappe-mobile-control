@@ -13,6 +13,10 @@ from frappe.rate_limiter import rate_limit
 from frappe.utils import validate_phone_number
 from frappe.utils.oauth import get_oauth2_authorize_url
 
+from .helpers.client_log import EVENT_LOGIN
+from .helpers.client_log import EVENT_LOGOUT
+from .helpers.client_log import EVENT_TOKEN_REFRESH
+from .helpers.client_log import record_client_event
 from .helpers.constants import get_mobile_login_ratelimit
 from .helpers.constants import get_mobile_otp_ratelimit
 from .helpers.mobile_config import get_mobile_configuration_payload
@@ -32,6 +36,7 @@ from .helpers.social_login import normalize_provider_id
 from .helpers.social_login import validate_redirect_uri
 from .helpers.user_auth import authenticate_user
 from .helpers.user_auth import authenticate_with_otp
+from .helpers.user_auth import end_other_device_sessions
 from .helpers.user_auth import ensure_api_credentials
 from .helpers.user_auth import generate_auth_token
 from .helpers.user_auth import generate_user_token
@@ -194,10 +199,12 @@ def login(username: str | None = None, password: str | None = None) -> None:
 	try:
 		user = authenticate_user(username, password)
 		validate_mobile_user_role()
+		end_other_device_sessions(user)
 		ensure_api_credentials(user)
 		access_token = generate_auth_token(user)
 		device_id, user_agent = get_request_metadata()
 		refresh_token = create_refresh_token(user, device_id=device_id, user_agent=user_agent)
+		record_client_event(EVENT_LOGIN, user=user.name)
 
 		frappe.local.login_manager.logout()
 		clear_login_response()
@@ -229,6 +236,7 @@ def logout() -> dict[str, str]:
 	try:
 		user = frappe.get_doc("User", frappe.session.user)
 		revoke_refresh_tokens_for_user(user)
+		record_client_event(EVENT_LOGOUT, user=user.name)
 		user.api_key = None
 		user.api_secret = None
 		user.save(ignore_permissions=True)
@@ -289,6 +297,7 @@ def verify_mobile_otp(tmp_id: str, otp: str) -> None:
 
 		login_manager = authenticate_with_otp(otp, tmp_id)
 		validate_mobile_user_role()
+		end_other_device_sessions(frappe.get_doc("User", login_manager.user))
 		user_doc, access_token = generate_user_token(login_manager)
 		device_id, user_agent = get_request_metadata()
 		refresh_token = create_refresh_token(user_doc, device_id=device_id, user_agent=user_agent)
@@ -333,6 +342,7 @@ def refresh_token(refresh_token: str) -> None:
 		ensure_api_credentials(user_doc)
 		access_token = generate_auth_token(user_doc)
 		new_refresh_token = rotate_refresh_token(token_doc, user_doc)
+		record_client_event(EVENT_TOKEN_REFRESH, user=user_doc.name)
 
 		payload = get_mobile_configuration_payload()
 		mobile_config = payload.get("configuration", [])
