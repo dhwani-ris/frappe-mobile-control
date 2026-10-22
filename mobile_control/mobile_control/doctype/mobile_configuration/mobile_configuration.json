@@ -6,7 +6,9 @@
  "engine": "InnoDB",
  "field_order": [
   "enabled",
+  "column_break_dleg",
   "offline_enabled",
+  "column_break_bveo",
   "single_device_login",
   "app_details_section",
   "package_name",
@@ -92,10 +94,18 @@
   },
   {
    "default": "30",
+   "description": "Mobile Error Log rows older than this are purged daily. 0 disables purging.",
    "fieldname": "mobile_error_log_retention_days",
    "fieldtype": "Int",
-   "label": "Mobile Error Log Retention (days)",
-   "description": "Mobile Error Log rows older than this are purged daily. 0 disables purging."
+   "label": "Mobile Error Log Retention (days)"
+  },
+  {
+   "fieldname": "column_break_dleg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_bveo",
+   "fieldtype": "Column Break"
   }
  ],
  "grid_page_length": 50,
@@ -103,7 +113,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-10-22 12:00:00.000000",
+ "modified": "2026-10-22 12:08:11.150088",
  "modified_by": "Administrator",
  "module": "Mobile Control",
  "name": "Mobile Configuration",
