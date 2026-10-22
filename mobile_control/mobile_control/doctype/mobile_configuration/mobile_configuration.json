@@ -7,6 +7,7 @@
  "field_order": [
   "enabled",
   "offline_enabled",
+  "single_device_login",
   "app_details_section",
   "package_name",
   "column_break_pioi",
@@ -31,6 +32,14 @@
    "fieldname": "offline_enabled",
    "fieldtype": "Check",
    "label": "Offline Mode Enabled"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.enabled",
+   "description": "A new login on another device signs the earlier device out.",
+   "fieldname": "single_device_login",
+   "fieldtype": "Check",
+   "label": "Allow Only One Device Per User"
   },
   {
    "depends_on": "eval:doc.enabled",
@@ -94,7 +103,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-06-03 18:51:18.432016",
+ "modified": "2026-10-22 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Mobile Control",
  "name": "Mobile Configuration",
