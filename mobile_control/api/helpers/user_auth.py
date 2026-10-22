@@ -8,11 +8,13 @@ from typing import Any
 import frappe
 from frappe import _
 from frappe.auth import LoginManager
+from frappe.utils.password import set_encrypted_password
 
 from ..jwt_auth import encode_api_credentials
 from .constants import ACCESS_TOKEN_TTL_SECONDS
 from .constants import MOBILE_USER_ROLES
 from .custom_login_manager import MobileLoginManager
+from .refresh_token import revoke_refresh_tokens_for_user
 
 
 def authenticate_user(username: str | None, password: str | None) -> Any:
@@ -43,6 +45,19 @@ def ensure_api_credentials(user: Any) -> None:
 		user.api_key = secrets.token_urlsafe(16)
 		user.api_secret = secrets.token_urlsafe(32)
 		user.save(ignore_permissions=True)
+
+
+def end_other_device_sessions(user: Any) -> None:
+	"""With one device per user on, sign out every earlier device before this login issues tokens.
+
+	Access tokens carry the api_secret, so a new secret voids them all at once. Written straight to
+	the password store: a User save would run every app's User hooks on each login.
+	"""
+	if not frappe.db.get_single_value("Mobile Configuration", "single_device_login"):
+		return
+	revoke_refresh_tokens_for_user(user)
+	if user.get("api_key"):
+		set_encrypted_password("User", user.name, secrets.token_urlsafe(32), "api_secret")
 
 
 def generate_auth_token(user: Any, expires_in: int = ACCESS_TOKEN_TTL_SECONDS) -> str:

@@ -36,6 +36,7 @@ from .helpers.social_login import normalize_provider_id
 from .helpers.social_login import validate_redirect_uri
 from .helpers.user_auth import authenticate_user
 from .helpers.user_auth import authenticate_with_otp
+from .helpers.user_auth import end_other_device_sessions
 from .helpers.user_auth import ensure_api_credentials
 from .helpers.user_auth import generate_auth_token
 from .helpers.user_auth import generate_user_token
@@ -198,6 +199,7 @@ def login(username: str | None = None, password: str | None = None) -> None:
 	try:
 		user = authenticate_user(username, password)
 		validate_mobile_user_role()
+		end_other_device_sessions(user)
 		ensure_api_credentials(user)
 		access_token = generate_auth_token(user)
 		device_id, user_agent = get_request_metadata()
@@ -295,6 +297,7 @@ def verify_mobile_otp(tmp_id: str, otp: str) -> None:
 
 		login_manager = authenticate_with_otp(otp, tmp_id)
 		validate_mobile_user_role()
+		end_other_device_sessions(frappe.get_doc("User", login_manager.user))
 		user_doc, access_token = generate_user_token(login_manager)
 		device_id, user_agent = get_request_metadata()
 		refresh_token = create_refresh_token(user_doc, device_id=device_id, user_agent=user_agent)
