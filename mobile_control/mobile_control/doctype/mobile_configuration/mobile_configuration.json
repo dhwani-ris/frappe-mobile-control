@@ -59,6 +59,7 @@
    "label": "Forms Configuration"
   },
   {
+   "allow_bulk_edit": 1,
    "fieldname": "table_lwis",
    "fieldtype": "Table",
    "options": "Mobile Configuration Form"
