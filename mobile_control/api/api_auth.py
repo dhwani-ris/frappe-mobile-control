@@ -276,9 +276,13 @@ def send_mobile_otp(mobile_no: str) -> dict[str, str]:
 		)
 
 	except frappe.AuthenticationError:
-		frappe.throw(_("Authentication failed"))
+		# A bare frappe.throw defaults to ValidationError (417), which would
+		# tell the client its request was malformed rather than that the
+		# mobile number/feature was rejected. Pass the type through so the
+		# correct status (401) reaches the caller, matching refresh_token().
+		frappe.throw(_("Authentication failed"), frappe.AuthenticationError)
 	except frappe.ValidationError:
-		frappe.throw(_("Invalid mobile number"))
+		frappe.throw(_("Invalid mobile number"), frappe.ValidationError)
 	except Exception as e:
 		frappe.log_error(f"Mobile OTP Send Error: {e}")
 		frappe.throw(_("Failed to send OTP. Please try again."))
@@ -320,9 +324,19 @@ def verify_mobile_otp(tmp_id: str, otp: str) -> None:
 		)
 
 	except frappe.AuthenticationError:
-		frappe.throw(_("Invalid OTP or session expired"))
+		# See send_mobile_otp above: pass the type through so an invalid/expired
+		# OTP maps to 401, not the ValidationError (417) a bare throw defaults
+		# to — a client should re-trigger OTP on 401, not treat it as a bad
+		# request.
+		frappe.throw(_("Invalid OTP or session expired"), frappe.AuthenticationError)
+	except frappe.PermissionError:
+		# validate_mobile_user_role() raises this for a user without the
+		# Mobile User role. Previously uncaught here, it fell into the bare
+		# `except Exception` below and came out as a generic 417 instead of
+		# 403 — same bug class as the other two branches.
+		frappe.throw(_("Not allowed to use mobile app"), frappe.PermissionError)
 	except frappe.ValidationError:
-		frappe.throw(_("Invalid request parameters"))
+		frappe.throw(_("Invalid request parameters"), frappe.ValidationError)
 	except Exception as e:
 		frappe.log_error(f"Mobile OTP Verify Error: {e}")
 		frappe.throw(_("Failed to verify OTP. Please try again."))
