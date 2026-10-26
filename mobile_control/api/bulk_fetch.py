@@ -40,6 +40,8 @@ from frappe import _
 # `doctype_service.dart`.
 MAX_BATCH = 200
 
+ROW_FILTERS_HOOK = "mobile_sync_row_filters"
+
 
 def _parse_names(raw: Any) -> list[str]:
 	"""Coerce the `names` argument to a list[str].
@@ -140,9 +142,17 @@ def get_docs_with_children(doctype: str, names: Any) -> list[dict[str, Any]]:
 			# REST path, where 404/403 are handled identically).
 			continue
 
+		doc.apply_fieldlevel_read_permissions()
+
 		# `as_dict()` includes all standard fields plus child Table
 		# rows as nested lists of dicts — same shape as
 		# `/api/resource/<doctype>/<name>`.
 		out.append(doc.as_dict())
 
-	return out
+	return _apply_row_filters(doctype, out)
+
+
+def _apply_row_filters(doctype: str, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+	for method in frappe.get_hooks(ROW_FILTERS_HOOK):
+		rows = frappe.get_attr(method)(doctype, rows)
+	return rows
