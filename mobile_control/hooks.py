@@ -226,12 +226,6 @@ override_whitelisted_methods = {
 before_request = ["mobile_control.api.jwt_auth.token_auth_middleware"]
 after_request = ["mobile_control.api.helpers.client_log.touch_last_seen_after_request"]
 
-# Mobile Sync
-# -----------
-# Other apps add filters that remove fields from bulk-fetched docs before
-# they reach a device: fn(doctype: str, rows: list[dict]) -> list[dict]
-# mobile_sync_row_filters = ["my_app.mobile.sanitize_rows"]
-
 # Job Events
 # ----------
 # before_job = ["mobile_control.utils.before_job"]

@@ -9,14 +9,14 @@ from mobile_control.api import bulk_fetch
 
 try:
 	from frappe.tests import IntegrationTestCase
-except ImportError:  # Frappe v15
+except ImportError:
 	from frappe.tests.utils import FrappeTestCase as IntegrationTestCase
 
 PARENT = "MC Bulk Fetch Test"
 CHILD = "MC Bulk Fetch Test Row"
 ROLE = "MC Bulk Fetch Reader"
 USER = "mc.bulk.reader@example.com"
-HAS_MASKING = hasattr(Document, "mask_fields")  # v16+
+HAS_MASKING = hasattr(Document, "mask_fields")
 
 
 def drop_note(doctype, rows):
@@ -96,7 +96,6 @@ def _make_role_and_user():
 
 
 def _make_doctypes():
-	# DocType DDL commits implicitly, so these persist across runs; create only once
 	if frappe.db.exists("DocType", PARENT):
 		return
 
