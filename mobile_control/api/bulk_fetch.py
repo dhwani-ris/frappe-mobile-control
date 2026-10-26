@@ -22,6 +22,14 @@ Security model — derived from Frappe's official guidance
     `as_dict()` automatically).
   * Names are bounded to MAX_BATCH per call so a runaway client cannot
     produce an unbounded SQL fan-out.
+  * Every doc goes through `doc.apply_fieldlevel_read_permissions()`,
+    the same call `/api/resource/<doctype>/<name>` makes. On v15 it
+    drops fields above the user's permlevel. On v16 it also replaces
+    fields the user may not unmask with the mask placeholder. One call,
+    no version check.
+  * Apps that keep values off devices register a filter in their
+    hooks.py (see `mobile_sync_row_filters` below). Mobile Control does
+    not import or depend on those apps.
 
 Returned shape: `[{...doc1}, {...doc2}, ...]` — the order may NOT match
 the input, and missing / forbidden / non-existent names are silently
@@ -39,6 +47,11 @@ from frappe import _
 # larger lists client-side; keep this in sync with the constant in
 # `doctype_service.dart`.
 MAX_BATCH = 200
+
+# hooks.py key for row filters: `mobile_sync_row_filters = ["app.module.fn"]`.
+# Each fn(doctype, rows) gets the whole batch after permissions are applied
+# and returns the rows to send. It may remove fields, never add them.
+ROW_FILTERS_HOOK = "mobile_sync_row_filters"
 
 
 def _parse_names(raw: Any) -> list[str]:
@@ -140,9 +153,20 @@ def get_docs_with_children(doctype: str, names: Any) -> list[dict[str, Any]]:
 			# REST path, where 404/403 are handled identically).
 			continue
 
+		# Drop permlevel fields (v15+) and mask fields (v16), exactly as
+		# `/api/resource/<doctype>/<name>` does before returning a doc.
+		doc.apply_fieldlevel_read_permissions()
+
 		# `as_dict()` includes all standard fields plus child Table
 		# rows as nested lists of dicts — same shape as
 		# `/api/resource/<doctype>/<name>`.
 		out.append(doc.as_dict())
 
-	return out
+	return _apply_row_filters(doctype, out)
+
+
+def _apply_row_filters(doctype: str, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+	"""Run every `mobile_sync_row_filters` hook once over the batch."""
+	for method in frappe.get_hooks(ROW_FILTERS_HOOK):
+		rows = frappe.get_attr(method)(doctype, rows)
+	return rows
