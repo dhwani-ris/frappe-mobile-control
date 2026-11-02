@@ -71,7 +71,7 @@ jobs:
           pytest --cov=. --cov-report=xml || echo "No tests found or pytest not configured"
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@0565863a31f2d7e3d6f5d53a99e6298cdfc7c5e # v3
+        uses: codecov/codecov-action@ab904c41d6ece82784817410c45d8b8c02684457 # v3
         with:
           file: ./coverage.xml
           fail_ci_if_error: false
@@ -253,7 +253,6 @@ jobs:
         with:
           python-version: '3.14'
           cache: pip
-      - uses: pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd # v3.0.1
       - name: Check for pre-commit config
         run: |
           if [ ! -f .pre-commit-config.yaml ]; then
@@ -262,6 +261,13 @@ jobs:
           else
             echo "Pre-commit config already exists."
           fi
+      # Not pre-commit/action: it calls actions/cache@v4 by tag internally, which the
+      # "pin every action to a full commit SHA" policy rejects before the job starts.
+      - name: Cache pre-commit hooks
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-3|${{ env.pythonLocation }}|${{ hashFiles('.pre-commit-config.yaml') }}
       - name: Install pre-commit
         run: pip install pre-commit
       - name: Run pre-commit

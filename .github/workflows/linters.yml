@@ -88,7 +88,6 @@ jobs:
         with:
           python-version: '3.14'
           cache: pip
-      - uses: pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd # v3.0.1
       - name: Check for pre-commit config
         run: |
           if [ ! -f .pre-commit-config.yaml ]; then
@@ -97,6 +96,13 @@ jobs:
           else
             echo "Pre-commit config already exists."
           fi
+      # Not pre-commit/action: it calls actions/cache@v4 by tag internally, which the
+      # "pin every action to a full commit SHA" policy rejects before the job starts.
+      - name: Cache pre-commit hooks
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-3|${{ env.pythonLocation }}|${{ hashFiles('.pre-commit-config.yaml') }}
       
       - name: Install pre-commit
         run: pip install pre-commit
