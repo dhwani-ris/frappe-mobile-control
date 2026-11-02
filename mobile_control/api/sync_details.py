@@ -72,7 +72,14 @@ def get_sync_details(doctypes: Any) -> dict[str, Any]:
 				result.append({"doctype": dt, "changed": False, "count": 0, "meta_bumped": False})
 				continue
 			filters = [["modified", ">", since]] if since else []
-			names = frappe.get_list(dt, filters=filters, limit_page_length=COUNT_CAP, pluck="name")
+			# order_by=None: the default `ORDER BY creation DESC` + LIMIT makes MariaDB walk
+			# the creation index over the whole table, checking every row against the
+			# user's User Permission conditions, which is very slow on large tables when
+			# the user matches few or no rows. Order is irrelevant here: only "any rows?"
+			# and a bounded count are read.
+			names = frappe.get_list(
+				dt, filters=filters, limit_page_length=COUNT_CAP, pluck="name", order_by=None
+			)
 			changed = bool(names) or not since
 			count = len(names) if changed else 0
 			wm = meta_wm.get(dt)
